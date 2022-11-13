@@ -59,7 +59,7 @@ services:
       - 9010:9010
   vald:
     image: vdaas/vald-agent-ngt:v1.6.3
-    user: 1001:121
+    user: 1000:1000
     volumes:
       - ./vald-config:/etc/server
       - /etc/passwd:/etc/passwd:ro
