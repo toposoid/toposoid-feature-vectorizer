@@ -22,6 +22,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE} && cd ../
           cd ./${{ env.PJ_REPO }}
+          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
           docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
           docker-compose -f docker-compose-workflow.yml up -d
           docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
