@@ -67,3 +67,5 @@ services:
     networks:
       app_net:
         ipv4_address: 172.30.0.2
+    ports:
+      - 8081:8081
