@@ -27,6 +27,10 @@ import play.api.libs.json.Json
 import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
+/**
+ * The main implementation of this module is text-to-vector representation conversion.
+ * The management of transformed vectors uses Vald.
+ */
 object FeatureVectorizer extends LazyLogging {
 
   /**
