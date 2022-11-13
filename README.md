@@ -10,7 +10,7 @@ Scala version 2.12.x,
 Sbt version 1.2.8
 
 ## Recommended environment
-* Required: at least 8GB of RAM
+* Required: at least 16GB of RAM
 * Required: 10G or higher　of HDD
 
 ## Setup
