@@ -24,8 +24,8 @@ jobs:
           cd ./${{ env.PJ_REPO }}
           rm -f vald-config/backup/.gitkeep
           echo "$(id -u $USER):$(id -g $USER)"
-          docker rm $(docker ps -a -q)
-          docker rmi --force $(docker images -q)
+          bash -c "docker rm --force $(docker ps -a -q) > /dev/null 2>&1" || true
+          bash -c "docker rmi --force $(docker images -q) > /dev/null 2>&1" || true
           docker images
           docker system prune -f
           docker volume prune -f
@@ -40,6 +40,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ${{ env.PJ_ACTOR }}/toposoid-scala-lib
+          ref: ${{ env.PJ_BRANCH }}
       - name: Docker meta
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
