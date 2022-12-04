@@ -87,17 +87,17 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledge
    * @return
    */
-  private def getVector(knowledge:Knowledge): FeatureVector = Try {
+  def getVector(knowledge:Knowledge): FeatureVector = Try {
     val langPatternJP: Regex = "^ja_.*".r
     val langPatternEN: Regex = "^en_.*".r
 
-    val parserInfo:(String, String) = knowledge.lang match {
+    val commonNLPInfo:(String, String) = knowledge.lang match {
       case langPatternJP() => (conf.getString("COMMON_NLP_JP_WEB_HOST"), "9006")
       case langPatternEN() => (conf.getString("COMMON_NLP_EN_WEB_HOST"), "9008")
       case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
     }
     val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
-    val featureVectorJson:String = ToposoidUtils.callComponent(json, parserInfo._1, parserInfo._2, "getFeatureVector")
+    val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector")
     Json.parse(featureVectorJson).as[FeatureVector]
   }match {
     case Success(s) => s
