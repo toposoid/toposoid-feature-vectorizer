@@ -25,6 +25,12 @@ RUN apt-get update \
 && git checkout ${TARGET_BRANCH} \
 && sbt publishLocal \
 && cd .. \
+&& git clone https://github.com/toposoid/toposoid-deduction-protocol-model.git \
+&& cd toposoid-deduction-protocol-model \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
+&& sbt publishLocal \
+&& cd .. \
 && git clone https://github.com/toposoid/toposoid-feature-vectorizer.git \
 && cd toposoid-feature-vectorizer \
 && git fetch origin ${TARGET_BRANCH} \

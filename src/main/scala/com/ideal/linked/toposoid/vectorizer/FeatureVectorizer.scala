@@ -21,6 +21,7 @@ import com.ideal.linked.toposoid.common.ToposoidUtils
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet}
+import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
 
@@ -38,12 +39,13 @@ object FeatureVectorizer extends LazyLogging {
    * @param propositionIds
    * @param knowledgeList
    */
-  def createVector(propositionIds:List[String], knowledgeList:List[Knowledge]):Unit=  Try{
-    for ((knowledgeInfo, sentenceId) <- (propositionIds zip knowledgeList).zipWithIndex) {
-      val propositionId: String = knowledgeInfo._1
-      val knowledge: Knowledge = knowledgeInfo._2
+  def createVector(knowledgeForParserList:List[KnowledgeForParser]):Unit=  Try{
+    for (knowledgeForParser <- knowledgeForParserList) {
+      val propositionId: String = knowledgeForParser.propositionId
+      val sentenceId:String = knowledgeForParser.sentenceId
+      val knowledge: Knowledge = knowledgeForParser.knowledge
       val featureVector: FeatureVector = getVector(knowledge)
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId +  "#" + knowledge.lang + "-s" + sentenceId.toString , vector = featureVector.vector)
+      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId +  "#" + knowledge.lang + "#" + sentenceId , vector = featureVector.vector)
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
       val statusInfo = registVector(featureVectorJson, knowledge.lang)
       if (statusInfo.status == "ERROR") {
@@ -61,14 +63,16 @@ object FeatureVectorizer extends LazyLogging {
    * @param propositionId
    * @param knowledgeSentenceSet
    */
-  def createVectorForKnowledgeSet(propositionId:String, knowledgeSentenceSet:KnowledgeSentenceSet):Unit= Try{
+  def createVectorForKnowledgeSet(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
 
-    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSet.premiseList.map(getVector(_))
-    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSet.claimList.map(getVector(_))
-    for ((knowledgeVecInfo, sentenceId) <- (featureVectorsPremise:::featureVectorsClaim zip knowledgeSentenceSet.premiseList ::: knowledgeSentenceSet.claimList).zipWithIndex) {
-      val featureVector = knowledgeVecInfo._1
-      val knowledge = knowledgeVecInfo._2
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId + "#" + knowledge.lang +"-s" + sentenceId.toString, vector = featureVector.vector)
+    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getVector(x.knowledge))
+    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getVector(x.knowledge))
+
+    for ((featureVector, knowledgeForParser) <- (featureVectorsPremise:::featureVectorsClaim zip knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList)){
+      val propositionId: String = knowledgeForParser.propositionId
+      val sentenceId:String = knowledgeForParser.sentenceId
+      val knowledge: Knowledge = knowledgeForParser.knowledge
+      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId + "#" + knowledge.lang +"#" + sentenceId, vector = featureVector.vector)
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
       val statusInfo = registVector(featureVectorJson, knowledge.lang)
       if (statusInfo.status == "ERROR") {
