@@ -39,6 +39,8 @@ object FeatureVectorizer extends LazyLogging {
    * @param propositionIds
    * @param knowledgeList
    */
+  /*
+  @deprecated
   def createVector(knowledgeForParserList:List[KnowledgeForParser]):Unit=  Try{
     for (knowledgeForParser <- knowledgeForParserList) {
       val propositionId: String = knowledgeForParser.propositionId
@@ -57,13 +59,13 @@ object FeatureVectorizer extends LazyLogging {
     case Success(s) => s
     case Failure(e) => throw e
   }
-
+  */
   /**
    *
    * @param propositionId
    * @param knowledgeSentenceSet
    */
-  def createVectorForKnowledgeSet(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
+  def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
 
     val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getVector(x.knowledge))
     val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getVector(x.knowledge))
