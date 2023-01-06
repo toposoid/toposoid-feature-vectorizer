@@ -51,6 +51,16 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
     KnowledgeForParser(propositionIdsJpEn(1), sentenceIdsJpEn(1), Knowledge("The universe is expanding.", "en_US" ,"{}", false)))
 
 
+  def registSingleClaim(knowledgeForParser:KnowledgeForParser): Unit = {
+    val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+      List.empty[KnowledgeForParser],
+      List.empty[PropositionRelation],
+      List(knowledgeForParser),
+      List.empty[PropositionRelation])
+    FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
+    Thread.sleep(5000)
+  }
+
   override def afterAll(): Unit = {
 
     for(knowledgeForParser <- knowledgeForParsersEn){
@@ -72,8 +82,7 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
 
   "The list of japanese sentences" should "be properly registered in the vald and searchable." in {
 
-    FeatureVectorizer.createVector(knowledgeForParsersJp)
-    Thread.sleep(5000)
+    knowledgeForParsersJp.map(registSingleClaim(_))
     for ((knowledgeForParser, i) <- knowledgeForParsersJp.zipWithIndex) {
       val knowledge = knowledgeForParser.knowledge
 
@@ -96,8 +105,9 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
 
 
   "The list of English sentences" should "be properly registered in the vald and searchable." in {
-    FeatureVectorizer.createVector(knowledgeForParsersEn)
-    Thread.sleep(5000)
+    knowledgeForParsersEn.map(registSingleClaim(_))
+    //FeatureVectorizer.createVector(knowledgeForParsersEn)
+    //Thread.sleep(5000)
     for ((knowledgeForParser, i) <- knowledgeForParsersEn.zipWithIndex) {
       val knowledge = knowledgeForParser.knowledge
       val json: String = Json.toJson(SingleSentence(sentence = knowledge.sentence)).toString()
@@ -119,8 +129,9 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
 
 
   "The list of japanese and english sentences" should "be properly registered in the vald and searchable." in {
-    FeatureVectorizer.createVector(knowledgeForParsersJpEn)
-    Thread.sleep(5000)
+    //FeatureVectorizer.createVector(knowledgeForParsersJpEn)
+    //Thread.sleep(5000)
+    knowledgeForParsersJpEn.map(registSingleClaim(_))
     for (knowledgeForParser <- knowledgeForParsersJpEn) {
       val knowledge = knowledgeForParser.knowledge
 
@@ -151,7 +162,7 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
       List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
     )
 
-    FeatureVectorizer.createVectorForKnowledgeSet(knowledgeSentenceSetForParser)
+    FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
     Thread.sleep(5000)
     val knowledgeForParsers: List[KnowledgeForParser] = knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList
     for ((knowledgeForParser, i) <- knowledgeForParsers.zipWithIndex) {
@@ -195,7 +206,7 @@ class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with Befo
       List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
     )
 
-    FeatureVectorizer.createVectorForKnowledgeSet(knowledgeSentenceSetForParser)
+    FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
     Thread.sleep(5000)
     val knowledgeForParsers: List[KnowledgeForParser] = knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList
     for ((knowledgeForParser, i) <- knowledgeForParsers.zipWithIndex) {
