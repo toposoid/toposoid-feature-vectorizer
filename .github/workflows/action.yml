@@ -24,8 +24,8 @@ jobs:
           cd ./${{ env.PJ_REPO }}
           rm -f vald-config/backup/.gitkeep
           echo "$(id -u $USER):$(id -g $USER)"
-          bash -c "docker rm --force $(docker ps -a -q) > /dev/null 2>&1" || true
-          bash -c "docker rmi --force $(docker images -q) > /dev/null 2>&1" || true
+          docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
+          docker rmi --force $(docker images -q) > /dev/null 2>&1 && :
           docker images
           docker system prune -f
           docker volume prune -f
