@@ -8,6 +8,12 @@ Toposoid is a knowledge base construction platform.(see [Toposoid　Root Project
 ## Requirements
 Scala version 2.12.x,   
 Sbt version 1.2.8
+* The following microservices must be running
+> toposoid/toposoid-common-nlp-japanese-web
+> toposoid/toposoid-common-nlp-english-web
+> toposoid/data-accessor-vald-web
+> vdaas/vald-agent-ngt:v1.6.3
+
 
 ## Recommended environment
 * Required: at least 16GB of RAM
@@ -19,47 +25,112 @@ sbt publishLocal
 ## Usage
 Please refer to the test code
 ```scala
+package com.ideal.linked.toposoid.vectorizer
+import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, PropositionRelation}
+import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.ideal.linked.toposoid.vectorizer.FeatureVectorizer
 import io.jvm.uuid.UUID
 
-//Japanese Pattern1
-val propositionIdsJp = List(UUID.random.toString, UUID.random.toString)
-val knowledgeListJp = List(Knowledge("太郎は映画を見た。", "ja_JP", "{}", false), Knowledge("花子の趣味はガーデニングです。", "ja_JP" ,"{}", false))
+object JapaneseTest extends App {
+  //Japanese Simple Sentence
+  val knowledgeList = List(KnowledgeForParser(
+    UUID.random.toString,
+    UUID.random.toString,
+    Knowledge("太郎は映画を見た。", "ja_JP", "{}", false)))
+  val knowledgeSentenceSetForParser1 = KnowledgeSentenceSetForParser(
+    List.empty[KnowledgeForParser],
+    List.empty[PropositionRelation],
+    knowledgeList,
+    List.empty[PropositionRelation])
+  FeatureVectorizer.createVector(knowledgeSentenceSetForParser1)
 
-FeatureVectorizer.createVector(propositionIdsJp, knowledgeListJp)
+  //Japanese Multiple Sentence
+  val knowledgeList1 = List(
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Bは黒髪ではない。", "ja_JP", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Cはブロンドではない。", "ja_JP", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Aは黒髪ではない。", "ja_JP", "{}", false))
+  )
 
-//Japanese Pattern2
-val propositionIdJp:String = UUID.random.toString
-val knowledgeSetJp:KnowledgeSentenceSet = KnowledgeSentenceSet(
-  List(Knowledge("Bは黒髪ではない。", "ja_JP", "{}", false),
-    Knowledge("Cはブロンドではない。", "ja_JP", "{}", false),
-    Knowledge("Aは黒髪ではない。", "ja_JP", "{}", false)),
-  List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
-  List(Knowledge("Dは黒髪ではない。", "ja_JP", "{}", false),
-    Knowledge("Eはブロンドではない。", "ja_JP", "{}", false),
-    Knowledge("Fは黒髪ではない。", "ja_JP", "{}")),
-  List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
-)
-FeatureVectorizer.createVectorForKnowledgeSet(propositionIdJp, knowledgeSetJp)
+  val knowledgeList2 = List(
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Dは黒髪ではない。", "ja_JP", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Eはブロンドではない。", "ja_JP", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("Fは黒髪ではない。", "ja_JP", "{}", false))
+  )
+  val knowledgeSentenceSetForParser2 = KnowledgeSentenceSetForParser(
+    knowledgeList1,
+    List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
+    knowledgeList2,
+    List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2)))
+  FeatureVectorizer.createVector(knowledgeSentenceSetForParser2)
 
-//English Pattern1
-val propositionIdsEn = List(UUID.random.toString, UUID.random.toString)
-val knowledgeListEn = List(Knowledge("That's life.", "en_US", "{}", false), Knowledge("Seeing is believing.", "en_US" ,"{}", false))
-FeatureVectorizer.createVector(propositionIdsEn, knowledgeListEn)
+}
 
-//English Pattern2
-val propositionIdEn:String = UUID.random.toString
-val knowledgeSetEn: KnowledgeSentenceSet = KnowledgeSentenceSet(
-  List(Knowledge("A's hair is not black.", "en_US", "{}", false),
-    Knowledge("B's hair is not blonde", "en_US", "{}", false),
-    Knowledge("C's hair is not black.", "en_US", "{}", false)),
-  List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
-  List(Knowledge("D's hair is not black.", "en_US", "{}", false),
-    Knowledge("E's hair is not blonde", "en_US", "{}", false),
-    Knowledge("F's hair is not black.", "en_US", "{}", false)),
-  List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
-)
-FeatureVectorizer.createVectorForKnowledgeSet(knowledgeSetEn, knowledgeSetEn)
+object EnglishTest extends App {
+  //English Simple Sentence
+  val knowledgeList = List(KnowledgeForParser(
+    UUID.random.toString,
+    UUID.random.toString,
+    Knowledge("That's life.", "en_US", "{}", false)))
+  val knowledgeSentenceSetForParser1 = KnowledgeSentenceSetForParser(
+    List.empty[KnowledgeForParser],
+    List.empty[PropositionRelation],
+    knowledgeList,
+    List.empty[PropositionRelation])
+  FeatureVectorizer.createVector(knowledgeSentenceSetForParser1)
+
+  //English Multiple Sentence
+  val knowledgeList1 = List(
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("A's hair is not black.", "en_US", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("B's hair is not blonde", "en_US", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("C's hair is not black.", "en_US", "{}", false))
+  )
+  val knowledgeList2 = List(
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("D's hair is not black.", "en_US", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("E's hair is not blonde", "en_US", "{}", false)),
+    KnowledgeForParser(
+      UUID.random.toString,
+      UUID.random.toString,
+      Knowledge("F's hair is not black.", "en_US", "{}", false))
+  )
+  val knowledgeSentenceSetForParser2 = KnowledgeSentenceSetForParser(
+    knowledgeList1,
+    List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
+    knowledgeList2,
+    List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2)))
+  FeatureVectorizer.createVector(knowledgeSentenceSetForParser2)
 ```
 
 ## Note
