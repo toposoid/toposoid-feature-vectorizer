@@ -36,32 +36,6 @@ object FeatureVectorizer extends LazyLogging {
 
   /**
    *
-   * @param propositionIds
-   * @param knowledgeList
-   */
-  /*
-  @deprecated
-  def createVector(knowledgeForParserList:List[KnowledgeForParser]):Unit=  Try{
-    for (knowledgeForParser <- knowledgeForParserList) {
-      val propositionId: String = knowledgeForParser.propositionId
-      val sentenceId:String = knowledgeForParser.sentenceId
-      val knowledge: Knowledge = knowledgeForParser.knowledge
-      val featureVector: FeatureVector = getVector(knowledge)
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId +  "#" + knowledge.lang + "#" + sentenceId , vector = featureVector.vector)
-      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, knowledge.lang)
-      if (statusInfo.status == "ERROR") {
-        logger.error(statusInfo.message)
-        throw new Exception(statusInfo.message)
-      }
-    }
-  }match {
-    case Success(s) => s
-    case Failure(e) => throw e
-  }
-  */
-  /**
-   *
    * @param propositionId
    * @param knowledgeSentenceSet
    */
@@ -124,5 +98,31 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
+  /**
+   *
+   * @param propositionIds
+   * @param knowledgeList
+   */
+  /*
+  @deprecated
+  def createVector(knowledgeForParserList:List[KnowledgeForParser]):Unit=  Try{
+    for (knowledgeForParser <- knowledgeForParserList) {
+      val propositionId: String = knowledgeForParser.propositionId
+      val sentenceId:String = knowledgeForParser.sentenceId
+      val knowledge: Knowledge = knowledgeForParser.knowledge
+      val featureVector: FeatureVector = getVector(knowledge)
+      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId +  "#" + knowledge.lang + "#" + sentenceId , vector = featureVector.vector)
+      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
+      val statusInfo = registVector(featureVectorJson, knowledge.lang)
+      if (statusInfo.status == "ERROR") {
+        logger.error(statusInfo.message)
+        throw new Exception(statusInfo.message)
+      }
+    }
+  }match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+  */
 
 }
