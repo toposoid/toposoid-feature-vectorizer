@@ -8,7 +8,7 @@ networks:
         - subnet: 172.30.0.0/24
 services:
   toposoid-feature-vectorizer:
-    image: toposoid-feature-vectorizer:0.4-SNAPSHOT
+    image: toposoid-feature-vectorizer:0.4
     tty: true
     environment:
       - COMMON_NLP_JP_WEB_HOST=172.30.0.7
@@ -18,7 +18,7 @@ services:
       app_net:
         ipv4_address: 172.30.0.3
   toposoid-common-nlp-japanese-web:
-    image: toposoid/toposoid-common-nlp-japanese-web:0.4-SNAPSHOT-workflow
+    image: toposoid/toposoid-common-nlp-japanese-web:0.4-workflow
     environment:
       - PRIVATE_IP_ADDRESS=192.168.33.10
       - SYNONYM_NOUN_SIMILARITY_THRESHHOLD_JP=0.52
@@ -33,7 +33,7 @@ services:
     ports:
       - 9006:9006
   toposoid-common-nlp-english-web:
-    image: toposoid/toposoid-common-nlp-english-web:0.4-SNAPSHOT
+    image: toposoid/toposoid-common-nlp-english-web:0.4
     environment:
       - PRIVATE_IP_ADDRESS=192.168.33.10
       - SYNONYM_NOUN_SIMILARITY_THRESHHOLD_EN=0.52
@@ -47,7 +47,7 @@ services:
     ports:
       - 9008:9008
   data-accessor-vald-web:
-    image: toposoid/data-accessor-vald-web:0.4-SNAPSHOT
+    image: toposoid/data-accessor-vald-web:0.4
     environment:
       - TOPOSOID_VALD_HOST=172.30.0.2
       - TOPOSOID_VALD_PORT=8081
