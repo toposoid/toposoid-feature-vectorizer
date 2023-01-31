@@ -1,0 +1,37 @@
+FROM toposoid/scala-nlp:2.12.12-0.1.0
+
+WORKDIR /app
+ARG TARGET_BRANCH
+ENV DEPLOYMENT=local
+ENV _JAVA_OPTIONS="-Xms512m -Xmx1g"
+
+RUN apt-get update \
+&& apt-get -y install git \
+&& git clone https://github.com/toposoid/scala-common.git \
+&& cd scala-common \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
+&& sbt publishLocal \
+&& cd .. \
+&& git clone https://github.com/toposoid/toposoid-common.git \
+&& cd toposoid-common \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
+&& sbt publishLocal \
+&& cd .. \
+&& git clone https://github.com/toposoid/toposoid-knowledgebase-model.git \
+&& cd toposoid-knowledgebase-model \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
+&& sbt publishLocal \
+&& cd .. \
+&& git clone https://github.com/toposoid/toposoid-deduction-protocol-model.git \
+&& cd toposoid-deduction-protocol-model \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
+&& sbt publishLocal \
+&& cd .. \
+&& git clone https://github.com/toposoid/toposoid-feature-vectorizer.git \
+&& cd toposoid-feature-vectorizer \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH}
