@@ -10,7 +10,7 @@ env:
   PJ_ACTOR: toposoid
   PJ_REPO: toposoid-feature-vectorizer
   PJ_BRANCH: main
-  PJ_VERSION: 0.5-SNAPSHOT
+  PJ_VERSION: 0.4
 jobs:
   unit-test_toposoid-feature-vectorizer:
     runs-on: self-hosted
