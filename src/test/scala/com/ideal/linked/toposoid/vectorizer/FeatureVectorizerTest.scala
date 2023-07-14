@@ -22,11 +22,12 @@ import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVecto
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, DiagrammedAssertions, FlatSpec}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.flatspec.AnyFlatSpec
 import io.jvm.uuid.UUID
 import play.api.libs.json.Json
 
-class FeatureVectorizerTest extends FlatSpec with DiagrammedAssertions with BeforeAndAfter with BeforeAndAfterAll{
+class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
 
   val propositionIdsJp = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)
   val sentenceIdsJp = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)

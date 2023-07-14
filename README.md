@@ -6,8 +6,8 @@ Toposoid is a knowledge base construction platform.(see [Toposoid　Root Project
 
 
 ## Requirements
-Scala version 2.12.x,   
-Sbt version 1.2.8
+Scala version 2.13.x,   
+Sbt version 1.9.0
 * The following microservices must be running
 > toposoid/toposoid-common-nlp-japanese-web
 > toposoid/toposoid-common-nlp-english-web
