@@ -59,7 +59,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       List(knowledgeForParser),
       List.empty[PropositionRelation])
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
-    Thread.sleep(5000)
+    Thread.sleep(7000)
   }
 
   override def afterAll(): Unit = {
@@ -164,7 +164,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
     )
 
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
-    Thread.sleep(5000)
+    Thread.sleep(7000)
     val knowledgeForParsers: List[KnowledgeForParser] = knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList
     for ((knowledgeForParser, i) <- knowledgeForParsers.zipWithIndex) {
 
@@ -208,7 +208,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
     )
 
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
-    Thread.sleep(5000)
+    Thread.sleep(7000)
     val knowledgeForParsers: List[KnowledgeForParser] = knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList
     for ((knowledgeForParser, i) <- knowledgeForParsers.zipWithIndex) {
 
