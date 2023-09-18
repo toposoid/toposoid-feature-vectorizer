@@ -18,7 +18,8 @@ package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.toposoid.common.ToposoidUtils
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, StatusInfo}
+import com.ideal.linked.toposoid.common.{PREMISE, CLAIM}
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
@@ -43,12 +44,23 @@ object FeatureVectorizer extends LazyLogging {
 
     val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getVector(x.knowledge))
     val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getVector(x.knowledge))
+    createVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index)
+    createVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index)
 
-    for ((featureVector, knowledgeForParser) <- (featureVectorsPremise:::featureVectorsClaim zip knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList)){
+  }match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+
+  private def createVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int):Unit = Try{
+
+    for ((featureVector, knowledgeForParser) <- (featureVectors zip knowledgeList)) {
       val propositionId: String = knowledgeForParser.propositionId
-      val sentenceId:String = knowledgeForParser.sentenceId
+      val sentenceId: String = knowledgeForParser.sentenceId
       val knowledge: Knowledge = knowledgeForParser.knowledge
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId + "#" + knowledge.lang +"#" + sentenceId, vector = featureVector.vector)
+      val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(propositionId, sentenceId, sentenceType, knowledge.lang)
+      val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, featureVector.vector)
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
       val statusInfo = registVector(featureVectorJson, knowledge.lang)
       if (statusInfo.status == "ERROR") {
@@ -56,11 +68,13 @@ object FeatureVectorizer extends LazyLogging {
         throw new Exception(statusInfo.message)
       }
     }
-  }match {
+
+    print("check")
+
+  } match {
     case Success(s) => s
     case Failure(e) => throw e
   }
-
 
   /**
    *
