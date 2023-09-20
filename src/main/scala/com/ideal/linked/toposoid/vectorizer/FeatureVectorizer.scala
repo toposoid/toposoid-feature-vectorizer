@@ -105,7 +105,7 @@ object FeatureVectorizer extends LazyLogging {
    * @return
    */
   private def registVector(json:String, lang:String):StatusInfo = Try{
-    val statusInfoJson = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "upsert")
+    val statusInfoJson = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_WEAVIATE_ACCESSOR_HOST"), "9011", "insert")
     Json.parse(statusInfoJson).as[StatusInfo]
   }match {
     case Success(s) => s
