@@ -62,14 +62,26 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
     Thread.sleep(7000)
   }
 
+  override def beforeAll(): Unit = {
+    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "createSchema")
+  }
+
   override def afterAll(): Unit = {
+
+    for (knowledgeForParser <- knowledgeForParsersJp) {
+      val propositionId = knowledgeForParser.propositionId
+      val sentenceId = knowledgeForParser.sentenceId
+      val knowledge = knowledgeForParser.knowledge
+      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
+    }
 
     for(knowledgeForParser <- knowledgeForParsersEn){
       val propositionId = knowledgeForParser.propositionId
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
 
     for(knowledgeForParser <- knowledgeForParsersJpEn){
@@ -77,7 +89,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
   }
 
@@ -92,7 +104,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 2)
       i match {
@@ -130,7 +142,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 2)
       i match {
@@ -167,7 +179,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 2)
       val jpResult = featureVectorSearchResult.ids.filter(_.lang.equals("ja_JP"))
@@ -210,7 +222,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 1)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
       assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
@@ -231,7 +243,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 1)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
       assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
@@ -246,7 +258,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val knowledge = knowledgeForParser.knowledge
 
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
 
     for ((knowledgeForParser, i) <- knowledgeForParsersClaim.zipWithIndex) {
@@ -255,7 +267,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val knowledge = knowledgeForParser.knowledge
 
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
   }
 
@@ -288,7 +300,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 1)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
       assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
@@ -309,7 +321,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
       val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 1)
       val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "search")
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "search")
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
       assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
@@ -325,7 +337,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val knowledge = knowledgeForParser.knowledge
 
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
 
     for ((knowledgeForParser, i) <- knowledgeForParsersClaim.zipWithIndex) {
@@ -334,7 +346,7 @@ class FeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeA
       val knowledge = knowledgeForParser.knowledge
 
       val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
-      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "delete")
+      ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_VECTORDB_ACCESSOR_PORT"), "delete")
     }
 
   }
