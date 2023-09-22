@@ -13,7 +13,8 @@ services:
     environment:
       - COMMON_NLP_JP_WEB_HOST=172.30.0.7
       - COMMON_NLP_EN_WEB_HOST=172.30.0.6
-      - TOPOSOID_WEAVIATE_ACCESSOR_HOST=172.30.0.9
+      - TOPOSOID_VECTORDB_ACCESSOR_HOST=172.30.0.9
+      - TOPOSOID_VECTORDB_ACCESSOR_PORT=9011
     networks:
       app_net:
         ipv4_address: 172.30.0.3
