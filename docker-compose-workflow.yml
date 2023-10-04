@@ -11,10 +11,18 @@ services:
     image: toposoid-feature-vectorizer:0.5-SNAPSHOT
     tty: true
     environment:
-      - COMMON_NLP_JP_WEB_HOST=172.30.0.7
-      - COMMON_NLP_EN_WEB_HOST=172.30.0.6
-      - TOPOSOID_VECTORDB_ACCESSOR_HOST=172.30.0.9
-      - TOPOSOID_VECTORDB_ACCESSOR_PORT=9011
+      - TOPOSOID_COMMON_NLP_JP_WEB_HOST=172.30.0.7
+      - TOPOSOID_COMMON_NLP_JP_WEB_PORT=9006
+      - TOPOSOID_COMMON_NLP_EN_WEB_HOST=172.30.0.6
+      - TOPOSOID_COMMON_NLP_EN_WEB_PORT=9008
+      - TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST=192.168.33.9
+      - TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT=9020
+      - TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST=192.168.33.11
+      - TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT=9021
+      - TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST=172.30.0.5
+      - TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT=9013
+      - TOPOSOID_CONTENTS_ADMIN_HOST=172.30.0.4
+      - TOPOSOID_CONTENTS_ADMIN_PORT=9012
     networks:
       app_net:
         ipv4_address: 172.30.0.3
@@ -47,43 +55,42 @@ services:
         ipv4_address: 172.30.0.6
     ports:
       - 9008:9008
- # data-accessor-vald-web:
- #   image: toposoid/data-accessor-vald-web:0.5-SNAPSHOT
- #   environment:
- #     - TOPOSOID_VALD_HOST=172.30.0.2
- #     - TOPOSOID_VALD_PORT=8081
- #     - TOPOSOID_VALD_DISTANCE_THRESHOLD=0.2 #For Multilingual Model 0.03
- #   networks:
- #     app_net:
- #       ipv4_address: 172.30.0.5
- #   ports:
- #     - 9010:9010
- # vald:
- #   image: vdaas/vald-agent-ngt:v1.7.6
- #   user: 1000:1000
- #   volumes:
- #     - ./vald-config:/etc/server
- #     - /etc/passwd:/etc/passwd:ro
- #     - /etc/group:/etc/group:ro
- #   networks:
- #     app_net:
- #       ipv4_address: 172.30.0.2
- #   ports:
- #     - 8081:8081
-  data-accessor-weaviate-web:
+
+  toposoid-contents-admin-web:
+    image: toposoid/toposoid-contents-admin-web:0.5-SNAPSHOT
+    environment:
+      - TOPOSOID_CONTENTS_URL=http://172.30.0.4:9012/contents/
+    networks:
+      app_net:
+        ipv4_address: 172.30.0.4
+    ports:
+      - 9012:9012
+
+
+  toposoid-common-image-recognition-web:
+    image: toposoid/toposoid-common-image-recognition-web:0.5-SNAPSHOT
+    environment:
+      - TOPOSOID_IMAGE_RECOGNITION_MODEL=google/vit-base-patch16-224
+    networks:
+      app_net:
+        ipv4_address: 172.30.0.5
+    ports:
+      - 9013:9013
+
+  data-accessor-sentence-weaviate-web:
     image: toposoid/data-accessor-weaviate-web:0.5-SNAPSHOT
     environment:
-      - TOPOSOID_WEAVIATE_HOST=172.30.0.8
+      - TOPOSOID_WEAVIATE_HOST=172.30.0.10
       - TOPOSOID_WEAVIATE_PORT=8080
       - TOPOSOID_WEAVIATE_SIMILARITY_THRESHOLD=0.85
     networks:
       app_net:
         ipv4_address: 172.30.0.9
     ports:
-      - 9011:9011
+      - 9020:9011
     depends_on:
-      - weaviate
-  weaviate:
+      - sentence-weaviate
+  sentence-weaviate:
     command:
       - --host
       - 0.0.0.0
@@ -96,9 +103,49 @@ services:
       - 8080:8080
     networks:
       app_net:
-        ipv4_address: 172.30.0.8
-    volumes:
-      - /var/weaviate:/var/lib/weaviate
+        ipv4_address: 172.30.0.10
+    #volumes:
+    #  - /var/weaviate:/var/lib/weaviate
+    restart: on-failure:0
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-huggingface'
+      HUGGINGFACE_APIKEY: ''
+      ENABLE_MODULES: 'text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai'
+      CLUSTER_HOSTNAME: 'node1'
+
+  data-accessor-image-weaviate-web:
+    image: toposoid/data-accessor-weaviate-web:0.5-SNAPSHOT
+    environment:
+      - TOPOSOID_WEAVIATE_HOST=172.30.0.12
+      - TOPOSOID_WEAVIATE_PORT=8081
+      - TOPOSOID_WEAVIATE_SIMILARITY_THRESHOLD=0.85
+    networks:
+      app_net:
+        ipv4_address: 172.30.0.11
+    ports:
+      - 9021:9011
+    depends_on:
+      - image-weaviate
+
+  image-weaviate:
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - '8081'
+      - --scheme
+      - http
+    image: semitechnologies/weaviate:1.21.2
+    ports:
+      - 8081:8081
+    networks:
+      app_net:
+        ipv4_address: 172.30.0.12
+    #volumes:
+    #  - /var/weaviate:/var/lib/weaviate
     restart: on-failure:0
     environment:
       QUERY_DEFAULTS_LIMIT: 25
