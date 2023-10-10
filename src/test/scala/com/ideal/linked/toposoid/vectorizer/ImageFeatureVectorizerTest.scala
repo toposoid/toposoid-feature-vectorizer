@@ -55,7 +55,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     val propositionId = UUID.random.toString
     val sentenceId = UUID.random.toString
-    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, KnowledgeForImages = List(registContentResult.knowledgeForImage))
+    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForImages = List(registContentResult.knowledgeForImage))
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],
                                                                                                       List.empty[PropositionRelation],

@@ -48,10 +48,10 @@ object FeatureVectorizer extends LazyLogging {
     createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index)
     createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index)
     //Regist Feature Of Images
-    if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.KnowledgeForImages.size > 0).size > 0) {
+    if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index)
     }
-    if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.KnowledgeForImages.size > 0).size > 0) {
+    if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index)
     }
 
@@ -96,7 +96,7 @@ object FeatureVectorizer extends LazyLogging {
   private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int): Unit = Try {
     val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
       (acc, x) => {
-        val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.KnowledgeForImages.map(y => {
+        val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
           val vector = getImageVector(y)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
