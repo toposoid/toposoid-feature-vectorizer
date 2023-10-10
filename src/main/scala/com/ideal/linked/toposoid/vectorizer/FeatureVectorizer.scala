@@ -122,7 +122,7 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledge
    * @return
    */
-  private def getSentenceVector(knowledge:Knowledge): FeatureVector = Try {
+  def getSentenceVector(knowledge:Knowledge): FeatureVector = Try {
     val langPatternJP: Regex = "^ja_.*".r
     val langPatternEN: Regex = "^en_.*".r
 
@@ -139,7 +139,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  private def getImageVector(knowledgeForImage: KnowledgeForImage): FeatureVector = Try{
+  def getImageVector(knowledgeForImage: KnowledgeForImage): FeatureVector = Try{
     val singleImage = SingleImage(url=knowledgeForImage.imageReference.reference.url)
     val json:String = Json.toJson(singleImage).toString()
     val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector")
