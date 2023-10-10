@@ -38,10 +38,11 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
   "The list of japanese sentences" should "be properly registered in the vald and searchable." in {
     //Regist Image And Get Image's URL
-    val reference: Reference = Reference(url = "http://images.cocodataset.org/val2017/000000039769.jpg",
+    val reference: Reference = Reference(url = "",
       surface = "猫が",
       surfaceIndex = 0,
-      isWholeSentence = false)
+      isWholeSentence = false,
+      originalUrlOrReference= "http://images.cocodataset.org/val2017/000000039769.jpg")
     val imageReference: ImageReference = ImageReference(reference = reference, 27, 41, 287, 435)
     val imageId = UUID.random.toString
     val knowledgeForImage: KnowledgeForImage = KnowledgeForImage(id = imageId, imageReference = imageReference)
@@ -54,7 +55,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     val propositionId = UUID.random.toString
     val sentenceId = UUID.random.toString
-    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, KnowledgeForImages = List(knowledgeForImage))
+    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, KnowledgeForImages = List(registContentResult.knowledgeForImage))
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],
                                                                                                       List.empty[PropositionRelation],
@@ -64,7 +65,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
 
     //Get Collect Image Vector
-    val singleImage: SingleImage = SingleImage(registContentResult.url)
+    val singleImage: SingleImage = SingleImage(registContentResult.knowledgeForImage.imageReference.reference.url)
     val featureVectorJson: String = ToposoidUtils.callComponent(
       Json.toJson(singleImage).toString(),
       conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"),
