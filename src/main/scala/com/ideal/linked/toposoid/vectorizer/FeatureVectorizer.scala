@@ -97,7 +97,7 @@ object FeatureVectorizer extends LazyLogging {
     val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
       (acc, x) => {
         val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
-          val vector = getImageVector(y)
+          val vector = getImageVector(y.imageReference.reference.url)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
         })
@@ -139,8 +139,8 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def getImageVector(knowledgeForImage: KnowledgeForImage): FeatureVector = Try{
-    val singleImage = SingleImage(url=knowledgeForImage.imageReference.reference.url)
+  def getImageVector(imageUrl: String): FeatureVector = Try{
+    val singleImage = SingleImage(url=imageUrl)
     val json:String = Json.toJson(singleImage).toString()
     val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector")
     Json.parse(featureVectorJson).as[FeatureVector]
