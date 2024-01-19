@@ -24,7 +24,8 @@ jobs:
           rm -f vald-config/backup/*
           echo "$(id -u $USER):$(id -g $USER)"
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
-          docker rmi --force $(docker images -q) > /dev/null 2>&1 && :
+          #docker rmi --force $(docker images -q) > /dev/null 2>&1 && :
+          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
           docker images
           docker system prune -f
           docker volume prune -f
