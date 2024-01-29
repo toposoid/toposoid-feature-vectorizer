@@ -17,27 +17,27 @@ services:
       - TOPOSOID_CONTENTS_ADMIN_HOST=toposoid-contents-admin-web
       - TOPOSOID_CONTENTS_ADMIN_PORT=9012
   toposoid-common-nlp-japanese-web:
-    image: toposoid/toposoid-common-nlp-japanese-web:0.5-SNAPSHOT-lowspec
+    image: toposoid/toposoid-common-nlp-japanese-web:0.5-SNAPSHOT
     environment:
       - PRIVATE_IP_ADDRESS=toposoid-common-nlp-japanese-web
       - TOPOSOID_SYNONYM_NOUN_SIMILARITY_THRESHHOLD_JP=0.52
       - TOPOSOID_SYNONYM_VERB_SIMILARITY_THRESHHOLD_JP=0.52
       - TOPOSOID_WORD2VEC_SIMILARITY_THRESHHOLD_JP=0.68
-      - TOPOSOID_CHIVE_MODEL_VERSION=chive-1.2-mc90.kv
-      - TOPOSOID_SENTENCEBERT_MODEL_JP=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      - TOPOSOID_CHIVE_MODEL_VERSION=chive-1.2-mc15.kv
+      - TOPOSOID_SENTENCEBERT_MODEL_JP=sentence-transformers/paraphrase-multilingual-mpnet-base-v2
       - SENTENCE_TRANSFORMERS_HOME=./models
       - PLAY_HTTP_PORT=9006
     ports:
       - 9006:9006
   toposoid-common-nlp-english-web:
-    image: toposoid/toposoid-common-nlp-english-web:0.5-SNAPSHOT-lowspec
+    image: toposoid/toposoid-common-nlp-english-web:0.5-SNAPSHOT
     environment:
       - PRIVATE_IP_ADDRESS=toposoid-common-nlp-english-web
       - TOPOSOID_SYNONYM_NOUN_SIMILARITY_THRESHHOLD_EN=0.52
       - TOPOSOID_SYNONYM_VERB_SIMILARITY_THRESHHOLD_EN=0.52
       - TOPOSOID_WORD2VEC_SIMILARITY_THRESHHOLD_EN=0.78
-      - TOPOSOID_SPACY_MODEL_EN=en_core_web_md
-      - TOPOSOID_SENTENCEBERT_MODEL_EN=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      - TOPOSOID_SPACY_MODEL_EN=en_core_web_lg
+      - TOPOSOID_SENTENCEBERT_MODEL_EN=sentence-transformers/paraphrase-multilingual-mpnet-base-v2
       - SENTENCE_TRANSFORMERS_HOME=./models
       - PLAY_HTTP_PORT=9008
     ports:
@@ -51,11 +51,11 @@ services:
       - 9012:9012
 
   toposoid-common-image-recognition-web:
-    image: toposoid/toposoid-common-image-recognition-web:0.5-SNAPSHOT-lowspec
+    image: toposoid/toposoid-common-image-recognition-web:0.5-SNAPSHOT
     environment:
       - TOPOSOID_IMAGE_RECOGNITION_VIT_MODEL=google/vit-base-patch16-224
       - TOPOSOID_IMAGE_RECOGNITION_MOBILE_VIT_MODEL=apple/mobilevit-small
-      - TOPOSOID_IMAGE_RECOGNITION_MOBILE_VIT_USE=1
+      - TOPOSOID_IMAGE_RECOGNITION_MOBILE_VIT_USE=0
     ports:
       - 9013:9013
 
