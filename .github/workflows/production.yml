@@ -30,13 +30,13 @@ jobs:
           docker images
           docker system prune -f
           docker volume prune -f
-          docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --build-arg JAVA_OPT_XMX=4g --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
-          docker-compose -f docker-compose-workflow.yml up -d
-          docker-compose -f docker-compose-workflow.yml logs
-          docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
-          docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
-          docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
-          docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
+          docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --build-arg JAVA_OPT_XMX=4g --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow-full .
+          docker-compose -f docker-compose-workflow-full.yml up -d
+          docker-compose -f docker-compose-workflow-full.yml logs
+          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
+          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
+          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
+          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
           docker rmi --force $(docker images -q) > /dev/null 2>&1 && :
       - name: Clone toposoid-scala-lib
         uses: actions/checkout@v3
