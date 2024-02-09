@@ -21,8 +21,6 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE} && cd ../
           cd ./${{ env.PJ_REPO }}
-          rm -f vald-config/backup/*
-          echo "$(id -u $USER):$(id -g $USER)"
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
           docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
           docker images
@@ -35,6 +33,7 @@ jobs:
           docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
           docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
           docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
+          docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
           docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
       - name: Clone toposoid-scala-lib
         uses: actions/checkout@v3
