@@ -28,25 +28,25 @@ import io.jvm.uuid.UUID
 import play.api.libs.json.Json
 
 class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
-
-  val propositionIdsJp = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)
-  val sentenceIdsJp = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)
+  
+  val propositionIdsJp = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
+  val sentenceIdsJp = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
   val knowledgeForParsersJp = List(
     KnowledgeForParser(propositionIdsJp(0), sentenceIdsJp(0), Knowledge("太郎は映画を見た。", "ja_JP", "{}", false)),
     KnowledgeForParser(propositionIdsJp(1), sentenceIdsJp(1), Knowledge("太郎は映画を楽しんだ。", "ja_JP", "{}", false)),
     KnowledgeForParser(propositionIdsJp(2), sentenceIdsJp(2), Knowledge("花子の趣味はガーデニングです。", "ja_JP" ,"{}", false)),
     KnowledgeForParser(propositionIdsJp(3), sentenceIdsJp(3), Knowledge("花子の趣味は庭仕事です。", "ja_JP" ,"{}", false)))
 
-  val propositionIdsEn = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)
-  val sentenceIdsEn = List(UUID.random.toString, UUID.random.toString, UUID.random.toString, UUID.random.toString)
+  val propositionIdsEn = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
+  val sentenceIdsEn = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
   val knowledgeForParsersEn = List(
     KnowledgeForParser(propositionIdsEn(0), sentenceIdsEn(0), Knowledge("Mark went to the doctor.", "en_US", "{}", false)),
     KnowledgeForParser(propositionIdsEn(1), sentenceIdsEn(1), Knowledge("Mark went to the hospital.", "en_US", "{}", false)),
     KnowledgeForParser(propositionIdsEn(2), sentenceIdsEn(2), Knowledge("Mary is studying Japanese.", "en_US", "{}", false)),
     KnowledgeForParser(propositionIdsEn(3), sentenceIdsEn(3),  Knowledge("Mary is interested in Japanese.", "en_US", "{}", false)))
 
-  val propositionIdsJpEn = List(UUID.random.toString, UUID.random.toString)
-  val sentenceIdsJpEn = List(UUID.random.toString, UUID.random.toString)
+  val propositionIdsJpEn = List(TestUtils.getUUID(), TestUtils.getUUID())
+  val sentenceIdsJpEn = List(TestUtils.getUUID(), TestUtils.getUUID())
   val knowledgeForParsersJpEn = List(
     KnowledgeForParser(propositionIdsJpEn(0), sentenceIdsJpEn(0), Knowledge("宇宙は膨張している。", "ja_JP", "{}", false)),
     KnowledgeForParser(propositionIdsJpEn(1), sentenceIdsJpEn(1), Knowledge("The universe is expanding.", "en_US" ,"{}", false)))
@@ -60,6 +60,10 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       List.empty[PropositionRelation])
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
     Thread.sleep(7000)
+  }
+
+  before {
+    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "createSchema")
   }
 
   override def beforeAll(): Unit = {
@@ -193,17 +197,17 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
   }
 
   "The List of Japanese Claims and Premises" should "be properly registered in the knowledge database and searchable." in {
-    val propositionId = UUID.random.toString
+    val propositionId = TestUtils.getUUID()
     val knowledgeSentenceSetForParser: KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
       List(
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Bは黒髪ではない。", "ja_JP", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Cはブロンドではない。", "ja_JP", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Aは黒髪ではない。", "ja_JP", "{}", false))),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Bは黒髪ではない。", "ja_JP", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Cはブロンドではない。", "ja_JP", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Aは黒髪ではない。", "ja_JP", "{}", false))),
       List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
       List(
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Dは黒髪ではない。", "ja_JP", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Eはブロンドではない。", "ja_JP", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("Fは黒髪ではない。", "ja_JP", "{}"))),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Dは黒髪ではない。", "ja_JP", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Eはブロンドではない。", "ja_JP", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("Fは黒髪ではない。", "ja_JP", "{}"))),
       List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
     )
 
@@ -272,17 +276,17 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
   }
 
   "The List of English Claims and Premises" should "be properly registered in the knowledge database and searchable." in {
-    val propositionId = UUID.random.toString
+    val propositionId = TestUtils.getUUID()
     val knowledgeSentenceSetForParser: KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
       List(
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("A's hair is not black.", "en_US", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("B's hair is not blonde", "en_US", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("C's hair is not black.", "en_US", "{}", false))),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("A's hair is not black.", "en_US", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("B's hair is not blonde", "en_US", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("C's hair is not black.", "en_US", "{}", false))),
       List(PropositionRelation("AND", 0, 1), PropositionRelation("OR", 1, 2)),
       List(
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("D's hair is not black.", "en_US", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("E's hair is not blonde", "en_US", "{}", false)),
-        KnowledgeForParser(propositionId, UUID.random.toString, Knowledge("F's hair is not black.", "en_US", "{}", false))),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("D's hair is not black.", "en_US", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("E's hair is not blonde", "en_US", "{}", false)),
+        KnowledgeForParser(propositionId, TestUtils.getUUID(), Knowledge("F's hair is not black.", "en_US", "{}", false))),
       List(PropositionRelation("OR", 0, 1), PropositionRelation("AND", 1, 2))
     )
 
