@@ -17,10 +17,11 @@
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.ToposoidUtils
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, StatusInfo}
+import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, SENTENCE, IMAGE, ToposoidUtils}
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
+import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
-import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet}
+import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeForImage}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
@@ -30,7 +31,7 @@ import scala.util.matching.Regex
 
 /**
  * The main implementation of this module is text-to-vector representation conversion.
- * The management of transformed vectors uses Vald.
+ * The management of transformed vectors uses VectorDB(weaviate).
  */
 object FeatureVectorizer extends LazyLogging {
 
@@ -41,21 +42,19 @@ object FeatureVectorizer extends LazyLogging {
    */
   def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
 
-    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getVector(x.knowledge))
-    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getVector(x.knowledge))
-
-    for ((featureVector, knowledgeForParser) <- (featureVectorsPremise:::featureVectorsClaim zip knowledgeSentenceSetForParser.premiseList ::: knowledgeSentenceSetForParser.claimList)){
-      val propositionId: String = knowledgeForParser.propositionId
-      val sentenceId:String = knowledgeForParser.sentenceId
-      val knowledge: Knowledge = knowledgeForParser.knowledge
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId + "#" + knowledge.lang +"#" + sentenceId, vector = featureVector.vector)
-      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, knowledge.lang)
-      if (statusInfo.status == "ERROR") {
-        logger.error(statusInfo.message)
-        throw new Exception(statusInfo.message)
-      }
+    //Regist Feature Of Sentences
+    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getSentenceVector(x.knowledge))
+    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge))
+    createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index)
+    createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index)
+    //Regist Feature Of Images
+    if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
+      createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index)
     }
+    if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
+      createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index)
+    }
+
   }match {
     case Success(s) => s
     case Failure(e) => throw e
@@ -64,16 +63,72 @@ object FeatureVectorizer extends LazyLogging {
 
   /**
    *
+   * @param featureVectors
+   * @param knowledgeList
+   * @param sentenceType
+   */
+  private def createSentenceVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int):Unit = Try{
+
+    for ((featureVector, knowledgeForParser) <- (featureVectors zip knowledgeList)) {
+      val propositionId: String = knowledgeForParser.propositionId
+      val sentenceId: String = knowledgeForParser.sentenceId
+      val knowledge: Knowledge = knowledgeForParser.knowledge
+      val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(propositionId, sentenceId, sentenceType, knowledge.lang)
+      val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, featureVector.vector)
+      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
+      val statusInfo = registVector(featureVectorJson, SENTENCE.index)
+      if (statusInfo.status == "ERROR") {
+        logger.error(statusInfo.message)
+        throw new Exception(statusInfo.message)
+      }
+    }
+
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  /**
+   *
+   * @param knowledgeForParsers
+   * @param sentenceType
+   */
+  private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int): Unit = Try {
+    val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
+      (acc, x) => {
+        val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
+          val vector = getImageVector(y.imageReference.reference.url)
+          val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang)
+          FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
+        })
+        acc ++ partialFeatureVectorForUpdate
+      }
+    }
+    for (featureVectorForUpdate <- featureVectorForUpdates) {
+      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
+      val statusInfo = registVector(featureVectorJson, IMAGE.index)
+      if (statusInfo.status == "ERROR") {
+        logger.error(statusInfo.message)
+        throw new Exception(statusInfo.message)
+      }
+    }
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  /**
+   *
    * @param knowledge
    * @return
    */
-  def getVector(knowledge:Knowledge): FeatureVector = Try {
+  def getSentenceVector(knowledge:Knowledge): FeatureVector = Try {
     val langPatternJP: Regex = "^ja_.*".r
     val langPatternEN: Regex = "^en_.*".r
 
     val commonNLPInfo:(String, String) = knowledge.lang match {
-      case langPatternJP() => (conf.getString("COMMON_NLP_JP_WEB_HOST"), "9006")
-      case langPatternEN() => (conf.getString("COMMON_NLP_EN_WEB_HOST"), "9008")
+      case langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
+      case langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
       case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
     }
     val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
@@ -84,45 +139,34 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  /**
-   *
-   * @param json
-   * @param lang
-   * @return
-   */
-  private def registVector(json:String, lang:String):StatusInfo = Try{
-    val statusInfoJson = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_VALD_ACCESSOR_HOST"), "9010", "upsert")
-    Json.parse(statusInfoJson).as[StatusInfo]
-  }match {
+  def getImageVector(imageUrl: String): FeatureVector = Try{
+    val singleImage = SingleImage(url=imageUrl)
+    val json:String = Json.toJson(singleImage).toString()
+    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector")
+    Json.parse(featureVectorJson).as[FeatureVector]
+  } match {
     case Success(s) => s
     case Failure(e) => throw e
   }
 
   /**
    *
-   * @param propositionIds
-   * @param knowledgeList
+   * @param json
+   * @param lang
+   * @return
    */
-  /*
-  @deprecated
-  def createVector(knowledgeForParserList:List[KnowledgeForParser]):Unit=  Try{
-    for (knowledgeForParser <- knowledgeForParserList) {
-      val propositionId: String = knowledgeForParser.propositionId
-      val sentenceId:String = knowledgeForParser.sentenceId
-      val knowledge: Knowledge = knowledgeForParser.knowledge
-      val featureVector: FeatureVector = getVector(knowledge)
-      val featureVectorForUpdate = FeatureVectorForUpdate(id = propositionId +  "#" + knowledge.lang + "#" + sentenceId , vector = featureVector.vector)
-      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, knowledge.lang)
-      if (statusInfo.status == "ERROR") {
-        logger.error(statusInfo.message)
-        throw new Exception(statusInfo.message)
-      }
+  private def registVector(json:String, featureType:Int):StatusInfo = Try{
+
+    val statusInfoJson = featureType match  {
+      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert")
+      case IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert")
+      case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
     }
+    Json.parse(statusInfoJson).as[StatusInfo]
   }match {
     case Success(s) => s
     case Failure(e) => throw e
   }
-  */
+
 
 }
