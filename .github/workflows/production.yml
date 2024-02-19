@@ -24,7 +24,7 @@ jobs:
           cd ${GITHUB_WORKSPACE} && cd ../
           cd ./${{ env.PJ_REPO }}
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
-          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
+          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} > /dev/null 2>&1 && :
           docker images
           docker system prune -f
           docker volume prune -f
@@ -34,6 +34,8 @@ jobs:
           docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
           docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
           docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "これはテストです。"}' http://localhost:9006/getFeatureVector
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "This is a test"}' http://localhost:9008/getFeatureVector
           docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
           docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
