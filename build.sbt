@@ -1,17 +1,17 @@
 import Dependencies._
 
 ThisBuild / scalaVersion     := "2.13.11"
-ThisBuild / version          := "0.5"
+ThisBuild / version          := "0.6-SNAPSHOT"
 ThisBuild / organization     := "com.ideal.linked"
 
 lazy val root = (project in file("."))
   .settings(
     name := "toposoid-feature-vectorizer",
     libraryDependencies += scalaTest % Test,
-    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.5",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.5",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.5",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.5",
+    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.6-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.6-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.6-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.6-SNAPSHOT",
     libraryDependencies += "io.jvm.uuid" %% "scala-uuid" % "0.3.1"
 )
   .enablePlugins(AutomateHeaderPlugin)
