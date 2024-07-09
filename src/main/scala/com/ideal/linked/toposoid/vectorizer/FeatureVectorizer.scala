@@ -17,7 +17,7 @@
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, SENTENCE, IMAGE, ToposoidUtils}
+import com.ideal.linked.toposoid.common.{CLAIM, IMAGE, PREMISE, SENTENCE, ToposoidUtils, TransversalState}
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
@@ -40,21 +40,21 @@ object FeatureVectorizer extends LazyLogging {
    * @param propositionId
    * @param knowledgeSentenceSet
    */
-  def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
+  def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser, transversalState:TransversalState):Unit= Try{
 
     //Regist Feature Of Sentences
-    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getSentenceVector(x.knowledge))
-    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge))
-    createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index)
-    createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index)
+    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getSentenceVector(x.knowledge, transversalState))
+    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge, transversalState))
+    createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index, transversalState)
+    createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     //Regist Feature Of Images
     if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
-      createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index)
+      createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index, transversalState)
     }
     if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
-      createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index)
+      createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     }
-
+    logger.info(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
   }match {
     case Success(s) => s
     case Failure(e) => throw e
@@ -67,7 +67,7 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledgeList
    * @param sentenceType
    */
-  private def createSentenceVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int):Unit = Try{
+  private def createSentenceVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int, transversalState:TransversalState):Unit = Try{
 
     for ((featureVector, knowledgeForParser) <- (featureVectors zip knowledgeList)) {
       val propositionId: String = knowledgeForParser.propositionId
@@ -76,7 +76,7 @@ object FeatureVectorizer extends LazyLogging {
       val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(propositionId, sentenceId, sentenceType, knowledge.lang)
       val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, featureVector.vector)
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, SENTENCE.index)
+      val statusInfo = registVector(featureVectorJson, SENTENCE.index, transversalState)
       if (statusInfo.status == "ERROR") {
         logger.error(statusInfo.message)
         throw new Exception(statusInfo.message)
@@ -93,11 +93,11 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledgeForParsers
    * @param sentenceType
    */
-  private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int): Unit = Try {
+  private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int, transversalState:TransversalState): Unit = Try {
     val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
       (acc, x) => {
         val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
-          val vector = getImageVector(y.imageReference.reference.url)
+          val vector = getImageVector(y.imageReference.reference.url, transversalState)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
         })
@@ -106,7 +106,7 @@ object FeatureVectorizer extends LazyLogging {
     }
     for (featureVectorForUpdate <- featureVectorForUpdates) {
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, IMAGE.index)
+      val statusInfo = registVector(featureVectorJson, IMAGE.index, transversalState)
       if (statusInfo.status == "ERROR") {
         logger.error(statusInfo.message)
         throw new Exception(statusInfo.message)
@@ -122,7 +122,7 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledge
    * @return
    */
-  def getSentenceVector(knowledge:Knowledge): FeatureVector = Try {
+  def getSentenceVector(knowledge:Knowledge, transversalState:TransversalState): FeatureVector = Try {
     val langPatternJP: Regex = "^ja_.*".r
     val langPatternEN: Regex = "^en_.*".r
 
@@ -132,17 +132,19 @@ object FeatureVectorizer extends LazyLogging {
       case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
     }
     val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
-    val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector")
+    val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector", transversalState)
+    logger.info(ToposoidUtils.formatMessageForLogger("Getting SentenceVector completed.", transversalState.username))
     Json.parse(featureVectorJson).as[FeatureVector]
   }match {
     case Success(s) => s
     case Failure(e) => throw e
   }
 
-  def getImageVector(imageUrl: String): FeatureVector = Try{
+  def getImageVector(imageUrl: String, transversalState:TransversalState): FeatureVector = Try{
     val singleImage = SingleImage(url=imageUrl)
     val json:String = Json.toJson(singleImage).toString()
-    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector")
+    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector", transversalState)
+    logger.info(ToposoidUtils.formatMessageForLogger("Getting ImageVector completed.", transversalState.username))
     Json.parse(featureVectorJson).as[FeatureVector]
   } match {
     case Success(s) => s
@@ -155,11 +157,11 @@ object FeatureVectorizer extends LazyLogging {
    * @param lang
    * @return
    */
-  private def registVector(json:String, featureType:Int):StatusInfo = Try{
+  private def registVector(json:String, featureType:Int, transversalState:TransversalState):StatusInfo = Try{
 
     val statusInfoJson = featureType match  {
-      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert")
-      case IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert")
+      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
+      case IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
       case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
     }
     Json.parse(statusInfoJson).as[StatusInfo]

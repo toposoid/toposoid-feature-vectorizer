@@ -18,7 +18,7 @@ package com.ideal.linked.toposoid.vectorizer
 
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils}
+import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils, TransversalState}
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, RegistContentResult, SingleFeatureVectorForSearch}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
@@ -31,9 +31,10 @@ import io.jvm.uuid.UUID
 
 class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
 
+  val transversalState:TransversalState = TransversalState(username="guest")
   override def beforeAll(): Unit = {
-    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "createSchema")
-    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "createSchema")
+    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "createSchema", transversalState)
+    ToposoidUtils.callComponent("{}", conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "createSchema", transversalState)
   }
 
   "The list of japanese sentences" should "be properly registered in the vald and searchable." in {
@@ -50,7 +51,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       Json.toJson(knowledgeForImage).toString(),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_HOST"),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_PORT"),
-      "registImage")
+      "registImage", transversalState)
     val registContentResult: RegistContentResult = Json.parse(registContentResultJson).as[RegistContentResult]
 
     val propositionId = UUID.random.toString
@@ -62,7 +63,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
                                                                                                       List(knowledgeForParser),
                                                                                                       List.empty[PropositionRelation])
     //Create Vector
-    FeatureVectorizer.createVector(knowledgeSentenceSetForParser)
+    FeatureVectorizer.createVector(knowledgeSentenceSetForParser, transversalState)
 
     //Get Collect Image Vector
     val singleImage: SingleImage = SingleImage(registContentResult.knowledgeForImage.imageReference.reference.url)
@@ -70,13 +71,13 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       Json.toJson(singleImage).toString(),
       conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"),
       conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"),
-      "getFeatureVector")
+      "getFeatureVector", transversalState)
     val featureVector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
 
     //Search Vector
     val searchOb = SingleFeatureVectorForSearch(vector = featureVector.vector, num = 10)
     val searchJson = Json.toJson(searchOb).toString()
-    val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search")
+    val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
     val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
 
     //Check
