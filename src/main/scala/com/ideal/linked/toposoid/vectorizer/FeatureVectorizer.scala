@@ -54,7 +54,7 @@ object FeatureVectorizer extends LazyLogging {
     if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     }
-    logger.info(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
+    logger.debug(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
   }match {
     case Success(s) => s
     case Failure(e) => throw e
@@ -133,7 +133,7 @@ object FeatureVectorizer extends LazyLogging {
     }
     val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
     val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector", transversalState)
-    logger.info(ToposoidUtils.formatMessageForLogger("Getting SentenceVector completed.", transversalState.username))
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting SentenceVector completed.", transversalState.username))
     Json.parse(featureVectorJson).as[FeatureVector]
   }match {
     case Success(s) => s
@@ -144,7 +144,7 @@ object FeatureVectorizer extends LazyLogging {
     val singleImage = SingleImage(url=imageUrl)
     val json:String = Json.toJson(singleImage).toString()
     val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector", transversalState)
-    logger.info(ToposoidUtils.formatMessageForLogger("Getting ImageVector completed.", transversalState.username))
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting ImageVector completed.", transversalState.username))
     Json.parse(featureVectorJson).as[FeatureVector]
   } match {
     case Success(s) => s
