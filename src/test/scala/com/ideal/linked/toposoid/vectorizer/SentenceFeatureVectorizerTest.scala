@@ -29,7 +29,7 @@ import play.api.libs.json.Json
 
 class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
 
-  val transversalState:TransversalState = TransversalState(username="guest")
+  val transversalState:TransversalState = TransversalState(userId="test-user", username="guest", roleId=0, csrfToken = "")
 
   val propositionIdsJp = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
   val sentenceIdsJp = List(TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID(), TestUtils.getUUID())
