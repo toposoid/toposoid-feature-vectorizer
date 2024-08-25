@@ -29,14 +29,14 @@ jobs:
           docker system prune -f
           docker volume prune -f
           docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --build-arg JAVA_OPT_XMX=4g --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
-          docker-compose -f docker-compose-workflow-full.yml up -d
-          docker-compose -f docker-compose-workflow-full.yml logs
-          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
-          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
-          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
+          docker compose -f docker-compose-workflow-full.yml up -d
+          docker compose -f docker-compose-workflow-full.yml logs
+          docker compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
+          docker compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
+          docker compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
           curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "これはテストです。"}' http://localhost:9006/getFeatureVector
           curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "This is a test"}' http://localhost:9008/getFeatureVector
-          docker-compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
+          docker compose -f docker-compose-workflow-full.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
           docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
       - name: Clone toposoid-scala-lib
