@@ -170,5 +170,35 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
+  def removeVector(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
+    //delete sentence vector
+    val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, knowledgeForParser.sentenceId, SENTENCE.index, knowledgeForParser.knowledge.lang)
+    val json = Json.toJson(featureVectorIdentifier).toString()
+    deleteVector(json, SENTENCE.index, transversalState)
+    //delete image vector
+    knowledgeForParser.knowledge.knowledgeForImages.foreach(x => {
+      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, SENTENCE.index, knowledgeForParser.knowledge.lang)
+      val json = Json.toJson(featureVectorIdentifier).toString()
+      deleteVector(json, IMAGE.index, transversalState)
+    })
+
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  private def deleteVector(json: String, featureType: Int, transversalState: TransversalState): StatusInfo = Try {
+
+    val statusInfoJson = featureType match {
+      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
+      case IMAGE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
+      case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
+    }
+    Json.parse(statusInfoJson).as[StatusInfo]
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
 
 }
