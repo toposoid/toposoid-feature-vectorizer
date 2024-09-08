@@ -177,7 +177,7 @@ object FeatureVectorizer extends LazyLogging {
     deleteVector(json, SENTENCE.index, transversalState)
     //delete image vector
     knowledgeForParser.knowledge.knowledgeForImages.foreach(x => {
-      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, SENTENCE.index, knowledgeForParser.knowledge.lang)
+      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, IMAGE.index, knowledgeForParser.knowledge.lang)
       val json = Json.toJson(featureVectorIdentifier).toString()
       deleteVector(json, IMAGE.index, transversalState)
     })
