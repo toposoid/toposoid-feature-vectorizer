@@ -92,6 +92,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
   "The list of japanese sentences" should "be properly registered and deleted." in {
     //Regist Image And Get Image's URL
+
     val reference: Reference = Reference(url = "",
       surface = "猫が",
       surfaceIndex = 0,
@@ -141,6 +142,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     //Check
     assert(featureVectorSearchResult.ids.size == 0)
+
   }
 
 
