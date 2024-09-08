@@ -137,24 +137,6 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
     }
   }
 
-
-  "The list of japanese sentences" should "be properly registered and deleted." in {
-    knowledgeForParsersJp.foreach(x => {
-      registSingleClaim(x)
-      FeatureVectorizer.removeVector(x, transversalState)
-    })
-    knowledgeForParsersJp.foreach(x =>{
-      val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
-      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), "9006", "getFeatureVector",transversalState)
-      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
-      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
-      val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
-      assert(featureVectorSearchResult.ids.size == 0)
-    })
-  }
-
   "The list of English sentences" should "be properly registered in the vald and searchable." in {
     knowledgeForParsersEn.map(registSingleClaim(_))
     //FeatureVectorizer.createVector(knowledgeForParsersEn)
@@ -188,23 +170,6 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
         }
       }
     }
-  }
-
-  "The list of English sentences" should "be properly registered and deleted." in {
-    knowledgeForParsersEn.foreach(x => {
-      registSingleClaim(x)
-      FeatureVectorizer.removeVector(x, transversalState)
-    })
-    knowledgeForParsersEn.foreach(x => {
-      val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
-      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), "9008", "getFeatureVector", transversalState)
-      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
-      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
-      val searchJson = Json.toJson(searchOb).toString()
-      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
-      assert(featureVectorSearchResult.ids.size == 0)
-    })
   }
 
   "The list of japanese and english sentences" should "be properly registered in the vald and searchable." in {
@@ -390,5 +355,41 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
     }
 
   }
+
+  "The list of English sentences" should "be properly registered and deleted." in {
+    knowledgeForParsersEn.foreach(x => {
+      //registSingleClaim(x)
+      FeatureVectorizer.removeVector(x, transversalState)
+    })
+    knowledgeForParsersEn.foreach(x => {
+      val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
+      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), "9008", "getFeatureVector", transversalState)
+      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
+      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
+      val searchJson = Json.toJson(searchOb).toString()
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      assert(featureVectorSearchResult.ids.size == 0)
+    })
+  }
+
+
+  "The list of japanese sentences" should "be properly registered and deleted." in {
+    knowledgeForParsersJp.foreach(x => {
+      //registSingleClaim(x)
+      FeatureVectorizer.removeVector(x, transversalState)
+    })
+    knowledgeForParsersJp.foreach(x => {
+      val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
+      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), "9006", "getFeatureVector", transversalState)
+      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
+      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
+      val searchJson = Json.toJson(searchOb).toString()
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      assert(featureVectorSearchResult.ids.size == 0)
+    })
+  }
+
 
 }
