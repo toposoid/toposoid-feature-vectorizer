@@ -84,7 +84,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
     assert(featureVectorSearchResult.ids.size == 1)
-    assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
+    assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
     assert(featureVectorSearchResult.ids(0).featureId.equals(imageId))
     assert(featureVectorSearchResult.ids(0).sentenceType == CLAIM.index)
     assert(featureVectorSearchResult.ids(0).lang == "ja_JP")
