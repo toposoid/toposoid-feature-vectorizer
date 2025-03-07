@@ -12,6 +12,8 @@ services:
       - TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT=9011 #Docker Container to Docker Container Access
       - TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST=data-accessor-image-weaviate-web
       - TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT=9011 #Docker Container to Docker Container Access
+      - TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST=data-accessor-non-sentence-weaviate-web
+      - TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT=9011 #Docker Container to Docker Container Access
       - TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST=toposoid-common-image-recognition-web
       - TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT=9013
       - TOPOSOID_CONTENTS_ADMIN_HOST=toposoid-contents-admin-web
