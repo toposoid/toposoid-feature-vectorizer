@@ -17,7 +17,7 @@
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils, TransversalState}
+import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, PROPOSITION_ID, ToposoidUtils, TransversalState, UNSPECIFIED}
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorId, FeatureVectorIdentifier, FeatureVectorSearchResult, SingleFeatureVectorForSearch, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet, PropositionRelation}
@@ -78,7 +78,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val propositionId = knowledgeForParser.propositionId
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
 
@@ -86,7 +86,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val propositionId = knowledgeForParser.propositionId
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
 
@@ -94,7 +94,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val propositionId = knowledgeForParser.propositionId
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
   }
@@ -116,21 +116,21 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       i match {
         case 0 => {
           //Set(propositionIdsJp(0) + "#" + knowledge.lang +"#" + sentenceIdsJp(0), propositionIdsJp(1) + "#" + knowledge.lang +"#" + sentenceIdsJp(1)))
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsJp(0), propositionIdsJp(1)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsJp(0), propositionIdsJp(1)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsJp(0), sentenceIdsJp(1)))
         }
         case 1 => {
           //Set(propositionIdsJp(0) + "#" + knowledge.lang +"#" + sentenceIdsJp(0), propositionIdsJp(1) + "#" + knowledge.lang +"#" + sentenceIdsJp(1)))
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsJp(0), propositionIdsJp(1) ))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsJp(0), propositionIdsJp(1) ))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsJp(0), sentenceIdsJp(1)))
         }
         case 2 => {
           //Set(propositionIdsJp(2) + "#" + knowledge.lang +"#" + sentenceIdsJp(2), propositionIdsJp(3) + "#" + knowledge.lang +"#" + sentenceIdsJp(3)))
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsJp(2), propositionIdsJp(3) ))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsJp(2), propositionIdsJp(3) ))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsJp(2), sentenceIdsJp(3)))
         }
         case 3 => {
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsJp(2), propositionIdsJp(3)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsJp(2), propositionIdsJp(3)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsJp(2), sentenceIdsJp(3)))
         }
       }
@@ -153,19 +153,19 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       assert(featureVectorSearchResult.ids.size == 2)
       i match {
         case 0 => {
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsEn(0), propositionIdsEn(1)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsEn(0), propositionIdsEn(1)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsEn(0), sentenceIdsEn(1)))
         }
         case 1 => {
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsEn(0), propositionIdsEn(1)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsEn(0), propositionIdsEn(1)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsEn(0), sentenceIdsEn(1)))
         }
         case 2 => {
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsEn(2), propositionIdsEn(3)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsEn(2), propositionIdsEn(3)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsEn(2), sentenceIdsEn(3)))
         }
         case 3 => {
-          assert(featureVectorSearchResult.ids.map(_.propositionId).toSet == Set(propositionIdsEn(2), propositionIdsEn(3)))
+          assert(featureVectorSearchResult.ids.map(_.superiorId).toSet == Set(propositionIdsEn(2), propositionIdsEn(3)))
           assert(featureVectorSearchResult.ids.map(_.featureId).toSet == Set(sentenceIdsEn(2), sentenceIdsEn(3)))
         }
       }
@@ -189,9 +189,9 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       assert(featureVectorSearchResult.ids.size == 2)
       val jpResult = featureVectorSearchResult.ids.filter(_.lang.equals("ja_JP"))
       val enResult = featureVectorSearchResult.ids.filter(_.lang.equals("en_US"))
-      assert(jpResult.map(_.propositionId).toSet == Set(propositionIdsJpEn(0)))
+      assert(jpResult.map(_.superiorId).toSet == Set(propositionIdsJpEn(0)))
       assert(jpResult.map(_.featureId).toSet == Set(sentenceIdsJpEn(0)))
-      assert(enResult.map(_.propositionId).toSet == Set(propositionIdsJpEn(1)))
+      assert(enResult.map(_.superiorId).toSet == Set(propositionIdsJpEn(1)))
       assert(enResult.map(_.featureId).toSet == Set(sentenceIdsJpEn(1)))
       //assert(featureVectorSearchResult.ids.toSet == Set(propositionIdsJpEn(0) + "#ja_JP#" + sentenceIdsJpEn(0), propositionIdsJpEn(1) + "#en_US#" + sentenceIdsJpEn(1)))
     }
@@ -230,7 +230,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search",transversalState)
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
-      assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
+      assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
       assert(featureVectorSearchResult.ids(0).featureId.equals(sentenceId))
       assert(featureVectorSearchResult.ids(0).lang.equals(knowledge.lang))
       assert(featureVectorSearchResult.ids(0).sentenceType == PREMISE.index)
@@ -251,7 +251,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search",transversalState)
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
-      assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
+      assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
       assert(featureVectorSearchResult.ids(0).featureId.equals(sentenceId))
       assert(featureVectorSearchResult.ids(0).lang.equals(knowledge.lang))
       assert(featureVectorSearchResult.ids(0).sentenceType == CLAIM.index)
@@ -262,7 +262,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
 
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
 
@@ -271,7 +271,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
 
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
   }
@@ -308,7 +308,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search",transversalState)
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
-      assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
+      assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
       assert(featureVectorSearchResult.ids(0).featureId.equals(sentenceId))
       assert(featureVectorSearchResult.ids(0).lang.equals(knowledge.lang))
       assert(featureVectorSearchResult.ids(0).sentenceType == PREMISE.index)
@@ -329,7 +329,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search",transversalState)
       val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
       assert(featureVectorSearchResult.ids.size == 1)
-      assert(featureVectorSearchResult.ids(0).propositionId.equals(propositionId))
+      assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
       assert(featureVectorSearchResult.ids(0).featureId.equals(sentenceId))
       assert(featureVectorSearchResult.ids(0).lang.equals(knowledge.lang))
       assert(featureVectorSearchResult.ids(0).sentenceType == CLAIM.index)
@@ -341,7 +341,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
 
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = PREMISE.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
 
@@ -350,7 +350,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
       val sentenceId = knowledgeForParser.sentenceId
       val knowledge = knowledgeForParser.knowledge
 
-      val featureVectorIdentifier = FeatureVectorIdentifier(propositionId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang)
+      val featureVectorIdentifier = FeatureVectorIdentifier(superiorId = propositionId, featureId = sentenceId, sentenceType = CLAIM.index, lang = knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier).toString(), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete",transversalState)
     }
 
