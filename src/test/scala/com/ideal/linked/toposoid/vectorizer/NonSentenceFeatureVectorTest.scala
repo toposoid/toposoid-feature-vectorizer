@@ -43,8 +43,17 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
       "目次1・・・・・・・・・・・・ p.1",
       "目次2・・・・・・・・・・・・ p.2",
       "目次3・・・・・・・・・・・・ p.3")
-    val knowledgeForDocument:KnowledgeForDocument = KnowledgeForDocument(id = UUID.random.toString, filename = "test.pdf", url = "http://xxx/test.pdf", titleOfTopPage = "テストタイトル")
-    val documentPageReference:DocumentPageReference = DocumentPageReference(pageNo = 1, references = references, tableOfContents = tableOfContents)
+
+    val headlines:List[String] = List(
+      "見出し1",
+      "見出し2",
+      "見出し3"
+    )
+
+    val titleOfTopPage = "テストタイトル"
+
+    val knowledgeForDocument:KnowledgeForDocument = KnowledgeForDocument(id = UUID.random.toString, filename = "test.pdf", url = "http://xxx/test.pdf", titleOfTopPage = titleOfTopPage)
+    val documentPageReference:DocumentPageReference = DocumentPageReference(pageNo = 1, references = references, tableOfContents = tableOfContents, headlines=headlines)
     val knowledge = Knowledge(sentence = "目次リファレンスのテストです。", lang = "ja_JP", extentInfoJson = "{}", knowledgeForDocument = knowledgeForDocument, documentPageReference = documentPageReference)
 
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId = UUID.random.toString, sentenceId = UUID.random.toString, knowledge = knowledge)
@@ -84,6 +93,32 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
       searchJson
     })
 
+    val headlinesSearchJsonList = headlines.map(x => {
+      val json: String = Json.toJson(SingleSentence(sentence = x)).toString()
+      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), "9006", "getFeatureVector", transversalState)
+      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
+      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
+      val searchJson = Json.toJson(searchOb).toString()
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      //Check
+      assert(featureVectorSearchResult.similarities.filter(_ > 0.99).size == 1)
+      searchJson
+    })
+
+    val titleOfTopPageJsonList = List(titleOfTopPage).map(x => {
+      val json: String = Json.toJson(SingleSentence(sentence = x)).toString()
+      val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), "9006", "getFeatureVector", transversalState)
+      val vector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
+      val searchOb = SingleFeatureVectorForSearch(vector = vector.vector, num = 10)
+      val searchJson = Json.toJson(searchOb).toString()
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      //Check
+      assert(featureVectorSearchResult.similarities.filter(_ > 0.99).size == 1)
+      searchJson
+    })
+
     //Delete Vector
     knowledgeSentenceSetForParser.claimList.foreach(x => {
       FeatureVectorizer.removeVector(x, transversalState)
@@ -103,6 +138,17 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
       assert(featureVectorSearchResult.similarities.filter(_ > 0.99).size == 0)
     })
 
+    headlinesSearchJsonList.map(x => {
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(x, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      assert(featureVectorSearchResult.similarities.filter(_ > 0.99).size == 0)
+    })
+
+    titleOfTopPageJsonList.map(x => {
+      val featureVectorSearchResultJson = ToposoidUtils.callComponent(x, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+      assert(featureVectorSearchResult.similarities.filter(_ > 0.99).size == 0)
+    })
 
   }
 

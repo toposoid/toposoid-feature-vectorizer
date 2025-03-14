@@ -17,7 +17,7 @@
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.{CLAIM, DOCUMENT_ID, IMAGE, NON_SENTENCE, NonSentenceType, PREMISE, PROPOSITION_ID, REFERENCES, SENTENCE, TABLE_OF_CONTENTS, ToposoidUtils, TransversalState, UNSPECIFIED}
+import com.ideal.linked.toposoid.common.{CLAIM, DOCUMENT_ID, HEADLINES, IMAGE, NON_SENTENCE, NonSentenceType, PREMISE, PROPOSITION_ID, REFERENCES, SENTENCE, TABLE_OF_CONTENTS, TITLE_OF_TOP_PAGE, ToposoidUtils, TransversalState, UNSPECIFIED}
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
@@ -55,6 +55,13 @@ object FeatureVectorizer extends LazyLogging {
     if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     }
+
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, REFERENCES, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, TABLE_OF_CONTENTS, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, HEADLINES, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, TITLE_OF_TOP_PAGE, transversalState:TransversalState)
+
+    /*
     //Regist Feature Of Reference (Since the information is linked to the Document, only the Claim is required.)
     val references:List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]){
       (acc, x) => {
@@ -85,10 +92,36 @@ object FeatureVectorizer extends LazyLogging {
         createNonSentenceVectorSub(documentId ,x , lang, TABLE_OF_CONTENTS.index, transversalState)
       )
     }
+    */
     logger.debug(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
   }match {
     case Success(s) => s
     case Failure(e) => throw e
+  }
+
+  private def nonSentenceVectorFacade(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser, nonSentenceType:NonSentenceType, transversalState:TransversalState) :Unit = {
+    val nonSentences: List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]) {
+      (acc, x) => {
+        val nonSentences:List[String] = nonSentenceType match   {
+          case REFERENCES =>  x.knowledge.documentPageReference.references
+          case TABLE_OF_CONTENTS => x.knowledge.documentPageReference.tableOfContents
+          case HEADLINES => x.knowledge.documentPageReference.headlines
+          case TITLE_OF_TOP_PAGE => List(x.knowledge.knowledgeForDocument.titleOfTopPage)
+          case _ => List.empty[String]
+        }
+        nonSentences.size match {
+          case 0 => acc
+          case _ => acc ++ nonSentences
+        }
+      }
+    }
+    val documentId = knowledgeSentenceSetForParser.claimList.head.knowledge.knowledgeForDocument.id
+    val lang = knowledgeSentenceSetForParser.claimList.head.knowledge.lang
+    if (!documentId.equals("") && nonSentences.size > 0) {
+      nonSentences.distinct.foreach(x =>
+        createNonSentenceVectorSub(documentId, x, lang, REFERENCES.index, transversalState)
+      )
+    }
   }
 
 
