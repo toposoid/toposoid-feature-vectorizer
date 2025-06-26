@@ -203,12 +203,14 @@ object FeatureVectorizer extends LazyLogging {
    * @return
    */
   def getSentenceVector(knowledge:Knowledge, transversalState:TransversalState): FeatureVector = Try {
-    val langPatternJP: Regex = "^ja_.*".r
-    val langPatternEN: Regex = "^en_.*".r
+    //val langPatternJP: Regex = "^ja_.*".r
+    //val langPatternEN: Regex = "^en_.*".r
 
+    //Special Symbol is embedded in English
     val commonNLPInfo:(String, String) = knowledge.lang match {
-      case langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
-      case langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
+      case ToposoidUtils.langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternSpecialSymbol1() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
       case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
     }
     val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
@@ -233,12 +235,14 @@ object FeatureVectorizer extends LazyLogging {
 
 
   def getNonSentenceVector(nonSentence: String, lang:String, transversalState: TransversalState): FeatureVector = Try {
-    val langPatternJP: Regex = "^ja_.*".r
-    val langPatternEN: Regex = "^en_.*".r
+    //val langPatternJP: Regex = "^ja_.*".r
+    //val langPatternEN: Regex = "^en_.*".r
 
+    //Special Symbol is embedded in English. But Can there be special symbols in NonSentence?
     val commonNLPInfo: (String, String) = lang match {
-      case langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
-      case langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
+      case ToposoidUtils.langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternSpecialSymbol1() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
       case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
     }
     val json: String = Json.toJson(SingleSentence(sentence = nonSentence)).toString()
