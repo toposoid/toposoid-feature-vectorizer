@@ -13,7 +13,8 @@ lazy val root = (project in file("."))
     libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.6-SNAPSHOT",
     libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.6-SNAPSHOT",
     libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.6-SNAPSHOT",
-    libraryDependencies += "io.jvm.uuid" %% "scala-uuid" % "0.3.1"
+    libraryDependencies += "io.jvm.uuid" %% "scala-uuid" % "0.3.1",
+      libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.9"
 )
   .enablePlugins(AutomateHeaderPlugin)
 

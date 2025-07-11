@@ -52,12 +52,14 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
     )
 
     val titleOfTopPage = "テストタイトル"
+    val documentId = UUID.random.toString
+    val propositionId = UUID.random.toString
 
-    val knowledgeForDocument:KnowledgeForDocument = KnowledgeForDocument(id = UUID.random.toString, filename = "test.pdf", url = "http://xxx/test.pdf", titleOfTopPage = titleOfTopPage)
+    val knowledgeForDocument:KnowledgeForDocument = KnowledgeForDocument(id = documentId, filename = "test.pdf", url = "http://xxx/test.pdf", titleOfTopPage = titleOfTopPage)
     val documentPageReference:DocumentPageReference = DocumentPageReference(pageNo = 1, references = references, tableOfContents = tableOfContents, headlines=headlines)
-    val knowledge = Knowledge(sentence = "目次リファレンスのテストです。", lang = "ja_JP", extentInfoJson = "{}", knowledgeForDocument = knowledgeForDocument, documentPageReference = documentPageReference)
+    val knowledge = Knowledge(sentence = "非文のテストです。", lang = "ja_JP", extentInfoJson = "{}", knowledgeForDocument = knowledgeForDocument, documentPageReference = documentPageReference)
 
-    val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId = UUID.random.toString, sentenceId = UUID.random.toString, knowledge = knowledge)
+    val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId = propositionId, sentenceId = UUID.random.toString, knowledge = knowledge)
     val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
       premiseList = List.empty[KnowledgeForParser],
       premiseLogicRelation = List.empty[PropositionRelation],
@@ -122,7 +124,7 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
 
     //Delete Vector
     knowledgeSentenceSetForParser.claimList.foreach(x => {
-      FeatureVectorizer.removeVector(x, transversalState)
+      FeatureVectorizer.removeAllVectorByDocumentId(documentId, List(propositionId), transversalState)
     })
     Thread.sleep(7000)
     //Check
