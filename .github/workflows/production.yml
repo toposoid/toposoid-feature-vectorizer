@@ -34,8 +34,8 @@ jobs:
           docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
           docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
           docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
-          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "これはテストです。"}' http://localhost:9006/getFeatureVector
-          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -d '{"sentence": "This is a test"}' http://localhost:9008/getFeatureVector
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -H "X_TOPOSOID_TRANSVERSAL_STATE: {'userId':'test-user', 'username':'guest', 'roleId':0, 'csrfToken':''}" -d '{"sentence": "これはテストです。"}' http://localhost:9006/getFeatureVector
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -H "X_TOPOSOID_TRANSVERSAL_STATE: {'userId':'test-user', 'username':'guest', 'roleId':0, 'csrfToken':''}" -d '{"sentence": "This is a test"}' http://localhost:9008/getFeatureVector
           sleep 10
           docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
           docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
