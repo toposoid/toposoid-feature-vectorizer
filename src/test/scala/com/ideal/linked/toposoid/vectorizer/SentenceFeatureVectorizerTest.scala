@@ -360,7 +360,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
   "The list of English sentences" should "be properly registered and deleted." in {
     knowledgeForParsersEn.foreach(x => {
       //registSingleClaim(x)
-      FeatureVectorizer.removeVectorByPromotionId(x, transversalState)
+      FeatureVectorizer.removeVectorByPropositionId(x, transversalState)
     })
     knowledgeForParsersEn.foreach(x => {
       val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
@@ -378,7 +378,7 @@ class SentenceFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with
   "The list of japanese sentences" should "be properly registered and deleted." in {
     knowledgeForParsersJp.foreach(x => {
       //registSingleClaim(x)
-      FeatureVectorizer.removeVectorByPromotionId(x, transversalState)
+      FeatureVectorizer.removeVectorByPropositionId(x, transversalState)
     })
     knowledgeForParsersJp.foreach(x => {
       val json: String = Json.toJson(SingleSentence(sentence = x.knowledge.sentence)).toString()
