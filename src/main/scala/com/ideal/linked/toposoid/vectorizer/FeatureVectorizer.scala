@@ -18,8 +18,8 @@
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.{CLAIM, DOCUMENT_ID, HEADLINES, IMAGE, NON_SENTENCE, NonSentenceType, PREMISE, PROPOSITION_ID, REFERENCES, SENTENCE, TABLE_OF_CONTENTS, TITLE_OF_TOP_PAGE, ToposoidUtils, TransversalState, UNSPECIFIED}
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
+import com.ideal.linked.toposoid.common.{CLAIM, DOCUMENT_ID, HEADLINES, IMAGE, NON_SENTENCE, NonSentenceType, PREMISE, PROPOSITION_ID, REFERENCES, SENTENCE, TABLE, TABLE_OF_CONTENTS, TITLE_OF_TOP_PAGE, ToposoidUtils, TransversalState, UNSPECIFIED}
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, FeatureVectorSearchResult, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeForImage}
@@ -276,7 +276,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def removeVector(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
+  def removeVectorByPromotionId(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
     //delete sentence vector
     val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, knowledgeForParser.sentenceId, SENTENCE.index, knowledgeForParser.knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
     val json = Json.toJson(featureVectorIdentifier).toString()
@@ -287,21 +287,39 @@ object FeatureVectorizer extends LazyLogging {
       val json = Json.toJson(featureVectorIdentifier).toString()
       deleteVector(json, IMAGE.index, transversalState)
     })
-    val documentId = knowledgeForParser.knowledge.knowledgeForDocument.id
-    if(!documentId.equals("")){
-      val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.knowledge.knowledgeForDocument.id, "-" , NON_SENTENCE.index, knowledgeForParser.knowledge.lang, DOCUMENT_ID.index, REFERENCES.index)
-      val json = Json.toJson(featureVectorIdentifier).toString()
-      deleteVector(json, NON_SENTENCE.index, transversalState)
-    }
-
-
+    //TODO:delete table vector
   } match {
     case Success(s) => s
     case Failure(e) => throw e
   }
 
-  private def deleteVector(json: String, featureType: Int, transversalState: TransversalState): StatusInfo = Try {
+  def removeAllVectorByDocumentId(documentId:String, propositionIds:List[String], transversalState: TransversalState): Unit = {
+    propositionIds.foreach(propositionId => {
+      this.removeAllVectorBySuperiorId(
+        conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"),
+        conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"),
+        propositionId, transversalState
+      )
+      this.removeAllVectorBySuperiorId(
+        conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"),
+        conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"),
+        propositionId, transversalState
+      )
+      //TODO:delete table vector
+    })
+    this.removeAllVectorBySuperiorId(
+      conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"),
+      conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"),
+      documentId, transversalState
+    )
+  }
+  private def removeAllVectorBySuperiorId(host:String, port:String, superiorId:String, transversalState: TransversalState) = Try{
+    //Other than superiorId, as long as there is no validation error, it's fine.
+    val featureVectorIdentifier2:FeatureVectorIdentifier = FeatureVectorIdentifier(superiorId, featureId = "-", sentenceType = 1, lang = "ja_JP", superiorType = 0, nonSentenceType = 0)
+    ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier2).toString(), host, port, "deleteBySuperiorId", transversalState)
+  }
 
+  private def deleteVector(json: String, featureType: Int, transversalState: TransversalState): StatusInfo = Try {
     val statusInfoJson = featureType match {
       case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
       case IMAGE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
