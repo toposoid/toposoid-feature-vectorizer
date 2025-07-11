@@ -276,7 +276,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def removeVectorByPromotionId(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
+  def removeVectorByPropositionId(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
     //delete sentence vector
     val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, knowledgeForParser.sentenceId, SENTENCE.index, knowledgeForParser.knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
     val json = Json.toJson(featureVectorIdentifier).toString()

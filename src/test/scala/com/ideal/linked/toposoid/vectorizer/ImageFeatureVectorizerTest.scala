@@ -92,7 +92,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     //Delete Vector
     knowledgeSentenceSetForParser.claimList.foreach(x => {
-      FeatureVectorizer.removeVectorByPromotionId(x, transversalState)
+      FeatureVectorizer.removeVectorByPropositionId(x, transversalState)
     })
     Thread.sleep(7000)
     val featureVectorSearchResultJson2 = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
