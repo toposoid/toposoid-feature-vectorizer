@@ -4,6 +4,7 @@ The management of transformed vectors uses [Weaviate](https://github.com/weaviat
 This library is mainly used by toposoid developer in Toposoid projects.
 Toposoid is a knowledge base construction platform.(see [Toposoid　Root Project](https://github.com/toposoid/toposoid.git))
 
+[![Unit Test](https://github.com/toposoid/toposoid-feature-vectorizer/actions/workflows/action.yml/badge.svg)](https://github.com/toposoid/toposoid-feature-vectorizer/actions/workflows/action.yml)
 
 ## Requirements
 Scala version 2.13.x,   
