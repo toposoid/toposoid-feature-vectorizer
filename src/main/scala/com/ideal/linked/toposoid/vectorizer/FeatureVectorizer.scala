@@ -1,30 +1,32 @@
 /*
- * Copyright 2021 Linked Ideal LLC.[https://linked-ideal.com/]
+ * Copyright (C) 2025  Linked Ideal LLC.[https://linked-ideal.com/]
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package com.ideal.linked.toposoid.vectorizer
 
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, SENTENCE, IMAGE, ToposoidUtils}
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, StatusInfo}
+import com.ideal.linked.toposoid.common.{CLAIM, DOCUMENT_ID, HEADLINES, IMAGE, NON_SENTENCE, NonSentenceType, PREMISE, PROPOSITION_ID, REFERENCES, SENTENCE, TABLE, TABLE_OF_CONTENTS, TITLE_OF_TOP_PAGE, ToposoidUtils, TransversalState, UNSPECIFIED}
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorForUpdate, FeatureVectorIdentifier, FeatureVectorSearchResult, StatusInfo}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeForImage}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
+import io.jvm.uuid.UUID
 
 import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
@@ -40,24 +42,87 @@ object FeatureVectorizer extends LazyLogging {
    * @param propositionId
    * @param knowledgeSentenceSet
    */
-  def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser):Unit= Try{
+  def createVector(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser, transversalState:TransversalState):Unit= Try{
 
     //Regist Feature Of Sentences
-    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getSentenceVector(x.knowledge))
-    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge))
-    createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index)
-    createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index)
+    val featureVectorsPremise:List[FeatureVector] = knowledgeSentenceSetForParser.premiseList.map(x => getSentenceVector(x.knowledge, transversalState))
+    val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge, transversalState))
+    createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, PREMISE.index, transversalState)
+    createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     //Regist Feature Of Images
     if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
-      createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index)
+      createImageVectorSub(knowledgeSentenceSetForParser.premiseList, PREMISE.index, transversalState)
     }
     if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
-      createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index)
+      createImageVectorSub(knowledgeSentenceSetForParser.claimList, CLAIM.index, transversalState)
     }
 
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, REFERENCES, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, TABLE_OF_CONTENTS, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, HEADLINES, transversalState:TransversalState)
+    nonSentenceVectorFacade(knowledgeSentenceSetForParser, TITLE_OF_TOP_PAGE, transversalState:TransversalState)
+
+    /*
+    //Regist Feature Of Reference (Since the information is linked to the Document, only the Claim is required.)
+    val references:List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]){
+      (acc, x) => {
+        x.knowledge.documentPageReference.references.size match  {
+          case 0 => acc
+          case _ => acc ++ x.knowledge.documentPageReference.references
+        }
+      }
+    }
+    val documentId = knowledgeSentenceSetForParser.claimList.head.knowledge.knowledgeForDocument.id
+    val lang = knowledgeSentenceSetForParser.claimList.head.knowledge.lang
+    if (!documentId.equals("") && references.size > 0) {
+      references.distinct.foreach( x =>
+        createNonSentenceVectorSub(documentId ,x , lang, REFERENCES.index, transversalState)
+      )
+    }
+    //Regist Feature Of TOC (Since the information is linked to the Document, only the Claim is required.)
+    val tocs:List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]) {
+      (acc, x) => {
+        x.knowledge.documentPageReference.tableOfContents.size match {
+          case 0 => acc
+          case _ => acc ++ x.knowledge.documentPageReference.tableOfContents
+        }
+      }
+    }
+    if (!documentId.equals("") && tocs.size > 0) {
+      tocs.distinct.foreach( x =>
+        createNonSentenceVectorSub(documentId ,x , lang, TABLE_OF_CONTENTS.index, transversalState)
+      )
+    }
+    */
+    logger.debug(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
   }match {
     case Success(s) => s
     case Failure(e) => throw e
+  }
+
+  private def nonSentenceVectorFacade(knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser, nonSentenceType:NonSentenceType, transversalState:TransversalState) :Unit = {
+    val nonSentences: List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]) {
+      (acc, x) => {
+        val nonSentences:List[String] = nonSentenceType match   {
+          case REFERENCES =>  x.knowledge.documentPageReference.references
+          case TABLE_OF_CONTENTS => x.knowledge.documentPageReference.tableOfContents
+          case HEADLINES => x.knowledge.documentPageReference.headlines
+          case TITLE_OF_TOP_PAGE => List(x.knowledge.knowledgeForDocument.titleOfTopPage)
+          case _ => List.empty[String]
+        }
+        nonSentences.size match {
+          case 0 => acc
+          case _ => acc ++ nonSentences
+        }
+      }
+    }
+    val documentId = knowledgeSentenceSetForParser.claimList.head.knowledge.knowledgeForDocument.id
+    val lang = knowledgeSentenceSetForParser.claimList.head.knowledge.lang
+    if (!documentId.equals("") && nonSentences.size > 0) {
+      nonSentences.distinct.foreach(x =>
+        createNonSentenceVectorSub(documentId, x, lang, REFERENCES.index, transversalState)
+      )
+    }
   }
 
 
@@ -67,16 +132,16 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledgeList
    * @param sentenceType
    */
-  private def createSentenceVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int):Unit = Try{
+  private def createSentenceVectorSub(featureVectors: List[FeatureVector], knowledgeList: List[KnowledgeForParser], sentenceType:Int, transversalState:TransversalState):Unit = Try{
 
     for ((featureVector, knowledgeForParser) <- (featureVectors zip knowledgeList)) {
       val propositionId: String = knowledgeForParser.propositionId
       val sentenceId: String = knowledgeForParser.sentenceId
       val knowledge: Knowledge = knowledgeForParser.knowledge
-      val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(propositionId, sentenceId, sentenceType, knowledge.lang)
+      val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(propositionId, sentenceId, sentenceType, knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
       val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, featureVector.vector)
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, SENTENCE.index)
+      val statusInfo = registVector(featureVectorJson, SENTENCE.index, transversalState)
       if (statusInfo.status == "ERROR") {
         logger.error(statusInfo.message)
         throw new Exception(statusInfo.message)
@@ -93,12 +158,12 @@ object FeatureVectorizer extends LazyLogging {
    * @param knowledgeForParsers
    * @param sentenceType
    */
-  private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int): Unit = Try {
+  private def createImageVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int, transversalState:TransversalState): Unit = Try {
     val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
       (acc, x) => {
         val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
-          val vector = getImageVector(y.imageReference.reference.url)
-          val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang)
+          val vector = getImageVector(y.imageReference.reference.url, transversalState)
+          val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
         })
         acc ++ partialFeatureVectorForUpdate
@@ -106,7 +171,7 @@ object FeatureVectorizer extends LazyLogging {
     }
     for (featureVectorForUpdate <- featureVectorForUpdates) {
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, IMAGE.index)
+      val statusInfo = registVector(featureVectorJson, IMAGE.index, transversalState)
       if (statusInfo.status == "ERROR") {
         logger.error(statusInfo.message)
         throw new Exception(statusInfo.message)
@@ -117,33 +182,17 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  /**
-   *
-   * @param knowledge
-   * @return
-   */
-  def getSentenceVector(knowledge:Knowledge): FeatureVector = Try {
-    val langPatternJP: Regex = "^ja_.*".r
-    val langPatternEN: Regex = "^en_.*".r
-
-    val commonNLPInfo:(String, String) = knowledge.lang match {
-      case langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
-      case langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
-      case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
+  private def createNonSentenceVectorSub(documentId:String, nonSentence:String, lang:String, nonSentenceType: Int, transversalState:TransversalState):Unit = Try {
+    val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(documentId, UUID.random.toString, -1, lang, DOCUMENT_ID.index, nonSentenceType)
+    val vector = getNonSentenceVector(nonSentence, lang, transversalState)
+    val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
+    val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
+    val statusInfo = registVector(featureVectorJson, NON_SENTENCE.index, transversalState)
+    if (statusInfo.status == "ERROR") {
+      logger.error(statusInfo.message)
+      throw new Exception(statusInfo.message)
     }
-    val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
-    val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector")
-    Json.parse(featureVectorJson).as[FeatureVector]
-  }match {
-    case Success(s) => s
-    case Failure(e) => throw e
-  }
 
-  def getImageVector(imageUrl: String): FeatureVector = Try{
-    val singleImage = SingleImage(url=imageUrl)
-    val json:String = Json.toJson(singleImage).toString()
-    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector")
-    Json.parse(featureVectorJson).as[FeatureVector]
   } match {
     case Success(s) => s
     case Failure(e) => throw e
@@ -151,19 +200,134 @@ object FeatureVectorizer extends LazyLogging {
 
   /**
    *
+   * @param knowledge
+   * @return
+   */
+  def getSentenceVector(knowledge:Knowledge, transversalState:TransversalState): FeatureVector = Try {
+    //val langPatternJP: Regex = "^ja_.*".r
+    //val langPatternEN: Regex = "^en_.*".r
+
+    //Special Symbol is embedded in English
+    val commonNLPInfo:(String, String) = knowledge.lang match {
+      case ToposoidUtils.langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
+      case ToposoidUtils.langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternSpecialSymbol1() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
+    }
+    val json:String = Json.toJson(SingleSentence(sentence=knowledge.sentence)).toString()
+    val featureVectorJson:String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector", transversalState)
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting SentenceVector completed.", transversalState.username))
+    Json.parse(featureVectorJson).as[FeatureVector]
+  }match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  def getImageVector(imageUrl: String, transversalState:TransversalState): FeatureVector = Try{
+    val singleImage = SingleImage(url=imageUrl)
+    val json:String = Json.toJson(singleImage).toString()
+    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector", transversalState)
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting ImageVector completed.", transversalState.username))
+    Json.parse(featureVectorJson).as[FeatureVector]
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+
+  def getNonSentenceVector(nonSentence: String, lang:String, transversalState: TransversalState): FeatureVector = Try {
+    //val langPatternJP: Regex = "^ja_.*".r
+    //val langPatternEN: Regex = "^en_.*".r
+
+    //Special Symbol is embedded in English. But Can there be special symbols in NonSentence?
+    val commonNLPInfo: (String, String) = lang match {
+      case ToposoidUtils.langPatternJP() => (conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_JP_WEB_PORT"))
+      case ToposoidUtils.langPatternEN() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case ToposoidUtils.langPatternSpecialSymbol1() => (conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_HOST"), conf.getString("TOPOSOID_COMMON_NLP_EN_WEB_PORT"))
+      case _ => throw new Exception("It is an invalid locale or an unsupported locale.")
+    }
+    val json: String = Json.toJson(SingleSentence(sentence = nonSentence)).toString()
+    val featureVectorJson: String = ToposoidUtils.callComponent(json, commonNLPInfo._1, commonNLPInfo._2, "getFeatureVector", transversalState)
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting SentenceVector completed.", transversalState.username))
+    Json.parse(featureVectorJson).as[FeatureVector]
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+
+  /**
+   *
    * @param json
    * @param lang
    * @return
    */
-  private def registVector(json:String, featureType:Int):StatusInfo = Try{
+  private def registVector(json:String, featureType:Int, transversalState:TransversalState):StatusInfo = Try{
 
     val statusInfoJson = featureType match  {
-      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert")
-      case IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert")
+      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
+      case IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
+      case NON_SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
       case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
     }
     Json.parse(statusInfoJson).as[StatusInfo]
   }match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  def removeVectorByPropositionId(knowledgeForParser:KnowledgeForParser, transversalState: TransversalState) = Try{
+    //delete sentence vector
+    val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, knowledgeForParser.sentenceId, SENTENCE.index, knowledgeForParser.knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
+    val json = Json.toJson(featureVectorIdentifier).toString()
+    deleteVector(json, SENTENCE.index, transversalState)
+    //delete image vector
+    knowledgeForParser.knowledge.knowledgeForImages.foreach(x => {
+      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, IMAGE.index, knowledgeForParser.knowledge.lang, PROPOSITION_ID.index, UNSPECIFIED.index)
+      val json = Json.toJson(featureVectorIdentifier).toString()
+      deleteVector(json, IMAGE.index, transversalState)
+    })
+    //TODO:delete table vector
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+  def removeAllVectorByDocumentId(documentId:String, propositionIds:List[String], transversalState: TransversalState): Unit = {
+    propositionIds.foreach(propositionId => {
+      this.removeAllVectorBySuperiorId(
+        conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"),
+        conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"),
+        propositionId, transversalState
+      )
+      this.removeAllVectorBySuperiorId(
+        conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"),
+        conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"),
+        propositionId, transversalState
+      )
+      //TODO:delete table vector
+    })
+    this.removeAllVectorBySuperiorId(
+      conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"),
+      conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"),
+      documentId, transversalState
+    )
+  }
+  private def removeAllVectorBySuperiorId(host:String, port:String, superiorId:String, transversalState: TransversalState) = Try{
+    //Other than superiorId, as long as there is no validation error, it's fine.
+    val featureVectorIdentifier2:FeatureVectorIdentifier = FeatureVectorIdentifier(superiorId, featureId = "-", sentenceType = 1, lang = "ja_JP", superiorType = 0, nonSentenceType = 0)
+    ToposoidUtils.callComponent(Json.toJson(featureVectorIdentifier2).toString(), host, port, "deleteBySuperiorId", transversalState)
+  }
+
+  private def deleteVector(json: String, featureType: Int, transversalState: TransversalState): StatusInfo = Try {
+    val statusInfoJson = featureType match {
+      case SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
+      case IMAGE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
+      case NON_SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "deleteBySuperiorId", transversalState)
+      case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
+    }
+    Json.parse(statusInfoJson).as[StatusInfo]
+  } match {
     case Success(s) => s
     case Failure(e) => throw e
   }
