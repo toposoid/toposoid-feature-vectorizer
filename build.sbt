@@ -2,17 +2,17 @@ import Dependencies._
 import de.heikoseeberger.sbtheader.License
 
 ThisBuild / scalaVersion     := "2.13.11"
-ThisBuild / version          := "0.6"
+ThisBuild / version          := "0.7-SNAPSHOT"
 ThisBuild / organization     := "com.ideal.linked"
 
 lazy val root = (project in file("."))
   .settings(
     name := "toposoid-feature-vectorizer",
     libraryDependencies += scalaTest % Test,
-    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.6",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.6",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.6",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.6",
+    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.7-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.7-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.7-SNAPSHOT",
+    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.7-SNAPSHOT",
     libraryDependencies += "io.jvm.uuid" %% "scala-uuid" % "0.3.1",
       libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.9"
 )
