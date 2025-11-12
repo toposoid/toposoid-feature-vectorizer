@@ -27,7 +27,7 @@ import com.ideal.linked.toposoid.knowledgebase.nlp.model.FeatureVector
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{ImageReference, Knowledge, KnowledgeForImage, PropositionRelation, Reference}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import play.api.libs.json.Json
-import io.jvm.uuid.UUID
+//import io.jvm.uuid.UUID
 
 
 class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
@@ -46,7 +46,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       isWholeSentence = false,
       originalUrlOrReference= "http://images.cocodataset.org/val2017/000000039769.jpg")
     val imageReference: ImageReference = ImageReference(reference = reference, 27, 41, 287, 435)
-    val imageId = UUID.random.toString
+    val imageId = java.util.UUID.randomUUID().toString
     val knowledgeForImage: KnowledgeForImage = KnowledgeForImage(id = imageId, imageReference = imageReference)
     val registContentResultJson = ToposoidUtils.callComponent(
       Json.toJson(knowledgeForImage).toString(),
@@ -55,8 +55,8 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       "registImage", transversalState)
     val registContentResult: RegistContentResult = Json.parse(registContentResultJson).as[RegistContentResult]
 
-    val propositionId = UUID.random.toString
-    val sentenceId = UUID.random.toString
+    val propositionId = java.util.UUID.randomUUID().toString
+    val sentenceId = java.util.UUID.randomUUID().toString
     val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForImages = List(registContentResult.knowledgeForImage))
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],

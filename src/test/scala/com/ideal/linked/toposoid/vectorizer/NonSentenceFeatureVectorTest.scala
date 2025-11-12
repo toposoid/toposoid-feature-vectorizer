@@ -22,7 +22,7 @@ import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVecto
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.{FeatureVector, SingleSentence}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{DocumentPageReference, Knowledge, KnowledgeForDocument, KnowledgeForImage, KnowledgeForTable, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
-import io.jvm.uuid.UUID
+//import io.jvm.uuid.UUID
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
 import play.api.libs.json.Json
@@ -52,14 +52,14 @@ class NonSentenceFeatureVectorTest extends AnyFlatSpec with BeforeAndAfter with 
     )
 
     val titleOfTopPage = "テストタイトル"
-    val documentId = UUID.random.toString
-    val propositionId = UUID.random.toString
+    val documentId = java.util.UUID.randomUUID().toString
+    val propositionId = java.util.UUID.randomUUID().toString
 
     val knowledgeForDocument:KnowledgeForDocument = KnowledgeForDocument(id = documentId, filename = "test.pdf", url = "http://xxx/test.pdf", titleOfTopPage = titleOfTopPage)
     val documentPageReference:DocumentPageReference = DocumentPageReference(pageNo = 1, references = references, tableOfContents = tableOfContents, headlines=headlines)
     val knowledge = Knowledge(sentence = "非文のテストです。", lang = "ja_JP", extentInfoJson = "{}", knowledgeForDocument = knowledgeForDocument, documentPageReference = documentPageReference)
 
-    val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId = propositionId, sentenceId = UUID.random.toString, knowledge = knowledge)
+    val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId = propositionId, sentenceId = java.util.UUID.randomUUID().toString, knowledge = knowledge)
     val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
       premiseList = List.empty[KnowledgeForParser],
       premiseLogicRelation = List.empty[PropositionRelation],
