@@ -176,13 +176,11 @@ services:
       - TOPOSOID_PDF_SERVICES_CLIENT_SECRET=__##YOUR_ADOBE_PDF_SERVICES_CLIENT_SECRET##__
     ports:
       - 9012:9012
+
   elasticmq:
-    image: softwaremill/elasticmq
+    image: toposoid/toposoid-elasticmq:0.7-SNAPSHOT
     ports:
       - 9324:9324
-      - 9325:9325
-    volumes:
-      - ./elasticmq.conf:/opt/elasticmq.conf
 
   data-accessor-mysql-web:
     image: toposoid/data-accessor-mysql-web:0.7-SNAPSHOT

@@ -17,16 +17,16 @@
 
 package com.ideal.linked.toposoid.vectorizer
 
-import io.jvm.uuid.UUID
+//import io.jvm.uuid.UUID
 
 object TestUtils {
 
   var usedUuidList = List.empty[String]
 
   def getUUID(): String = {
-    var uuid: String = UUID.random.toString
+    var uuid: String = java.util.UUID.randomUUID().toString
     while (usedUuidList.filter(_.equals(uuid)).size > 0) {
-      uuid = UUID.random.toString
+      uuid = java.util.UUID.randomUUID().toString
     }
     usedUuidList = usedUuidList :+ uuid
     uuid

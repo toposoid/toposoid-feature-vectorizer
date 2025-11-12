@@ -26,7 +26,7 @@ import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, Knowledg
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
-import io.jvm.uuid.UUID
+//import io.jvm.uuid.UUID
 
 import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
@@ -183,7 +183,7 @@ object FeatureVectorizer extends LazyLogging {
   }
 
   private def createNonSentenceVectorSub(documentId:String, nonSentence:String, lang:String, nonSentenceType: Int, transversalState:TransversalState):Unit = Try {
-    val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(documentId, UUID.random.toString, -1, lang, DOCUMENT_ID.index, nonSentenceType)
+    val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(documentId, java.util.UUID.randomUUID().toString, -1, lang, DOCUMENT_ID.index, nonSentenceType)
     val vector = getNonSentenceVector(nonSentence, lang, transversalState)
     val featureVectorForUpdate = FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
     val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
