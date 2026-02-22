@@ -19,7 +19,7 @@ package com.ideal.linked.toposoid.vectorizer
 
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils, TransversalState}
+import com.ideal.linked.toposoid.common.{SentenceType, ToposoidUtils, TransversalState}
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, RegistContentResult, SingleFeatureVectorForSearch}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
@@ -87,7 +87,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     assert(featureVectorSearchResult.ids.size == 1)
     assert(featureVectorSearchResult.ids(0).superiorId.equals(propositionId))
     assert(featureVectorSearchResult.ids(0).featureId.equals(imageId))
-    assert(featureVectorSearchResult.ids(0).sentenceType == CLAIM.index)
+    assert(featureVectorSearchResult.ids(0).sentenceType == SentenceType.CLAIM.index)
     assert(featureVectorSearchResult.ids(0).lang == "ja_JP")
 
     //Delete Vector
