@@ -11,4 +11,5 @@ docker-compose-local.yml
 .vscode
 project/project
 project/metals.sbt
+.bloop
 
