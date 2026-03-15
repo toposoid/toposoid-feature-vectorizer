@@ -7,15 +7,14 @@ ThisBuild / organization     := "com.ideal.linked"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "toposoid-feature-vectorizer",
-    resolvers += Resolver.mavenLocal,
-    libraryDependencies += scalaTest % Test,
-    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.7-SNAPSHOT",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.7-SNAPSHOT",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.7-SNAPSHOT",
-    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.7-SNAPSHOT",
-    //libraryDependencies += "io.jvm.uuid" %% "scala-uuid" % "0.3.1",
-    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.13",
+    name := "toposoid-feature-vectorizer",    
+    libraryDependencies += scalaTest % Test exclude("org.slf4j","slf4j-api"),
+    libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.7-SNAPSHOT" exclude("org.slf4j","slf4j-api"),
+    libraryDependencies += "com.ideal.linked" %% "toposoid-knowledgebase-model" % "0.7-SNAPSHOT" exclude("org.slf4j","slf4j-api"),
+    libraryDependencies += "com.ideal.linked" %% "toposoid-deduction-protocol-model" % "0.7-SNAPSHOT" exclude("org.slf4j","slf4j-api"),
+    libraryDependencies += "com.ideal.linked" %% "toposoid-common" % "0.7-SNAPSHOT" exclude("org.slf4j","slf4j-api"),    
+    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.13" exclude("org.slf4j","slf4j-api"),
+    libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.36" ,
     parallelExecution in Test := false
 )
   .enablePlugins(AutomateHeaderPlugin)
