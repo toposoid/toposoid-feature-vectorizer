@@ -18,7 +18,7 @@ jobs:
     secrets: inherit      
   build-preparation:    
     runs-on: ubuntu-24.04
-    needs: [unit-test_toposoid-common-amd64, unit-test_toposoid-common-arm64]
+    needs: [unit-test_toposoid-feature-vectorizer-amd64, unit-test_toposoid-feature-vectorizer-arm64]
     steps:
       - name: Clone toposoid-scala-lib
         uses: actions/checkout@v4
