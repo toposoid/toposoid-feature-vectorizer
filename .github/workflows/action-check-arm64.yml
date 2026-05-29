@@ -1,0 +1,38 @@
+name: Unit Test
+on:
+  workflow_call:
+env:
+  PJ_ACTOR: toposoid
+  PJ_REPO: toposoid-feature-vectorizer
+  PJ_BRANCH: feature
+  PJ_VERSION: 0.7-SNAPSHOT
+jobs:
+  unit-test_toposoid-feature-vectorizer-arm64:
+    runs-on: [self-hosted, linux, ARM64]
+    steps:
+      - name: Clone ${{ env.PJ_REPO }}
+        uses: actions/checkout@v3
+        with:
+            repository: ${{ env.PJ_ACTOR }}/${{ env.PJ_REPO }}
+      - name: Execute tests
+        run: |
+          cd ${GITHUB_WORKSPACE} && cd ../
+          cd ./${{ env.PJ_REPO }}
+          docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
+          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} > /dev/null 2>&1 && :
+          docker rmi --force toposoid/toposoid-scala-lib:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :
+          docker images
+          docker system prune -f
+          docker volume prune -f
+          docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow --no-cache .
+          docker compose -f docker-compose-workflow.yml up -d
+          docker compose -f docker-compose-workflow.yml logs
+          docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
+          docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test:headerCheck"
+          docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt compile"
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -H "X_TOPOSOID_TRANSVERSAL_STATE: {'userId':'test-user', 'username':'guest', 'roleId':0, 'csrfToken':''}" -d '{"sentence": "これはテストです。"}' http://localhost:9006/getFeatureVector
+          curl --retry 10 --retry-delay 5 --retry-all-errors -X POST -H "Content-Type: application/json" -H "X_TOPOSOID_TRANSVERSAL_STATE: {'userId':'test-user', 'username':'guest', 'roleId':0, 'csrfToken':''}" -d '{"sentence": "This is a test"}' http://localhost:9008/getFeatureVector
+          sleep 10
+          docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt test"
+          docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
+          docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
