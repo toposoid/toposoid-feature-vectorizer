@@ -340,6 +340,32 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
+  def getFeatureVectorSearchResult(featureType:FeatureType,  sentence:String, lang:String, url:String, transversalState:TransversalState): FeatureVectorSearchResult = {
+
+    val featureVectorSearchResultJson = featureType match {
+      case FeatureType.SENTENCE => {
+        val vector = getSentenceVector(Knowledge(sentence, lang, "{}"), transversalState)
+        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_SENTENCE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
+        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      }
+      case FeatureType.IMAGE => {
+        val vector = getImageVector(url, transversalState)
+        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
+        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      }
+      case FeatureType.TABLE => {
+        //TODO:Implement
+        Json.toJson(FeatureVectorSearchResult(List.empty[FeatureVectorIdentifier], List.empty[Float], StatusInfo("Ok", ""))).toString
+      } 
+      case _ => {
+        Json.toJson(FeatureVectorSearchResult(List.empty[FeatureVectorIdentifier], List.empty[Float], StatusInfo("Ok", ""))).toString
+      }
+    }
+
+    Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+
+  }
+  /*
   def getMatchedSentenceFeature(aso:AnalyzedSentenceObject, transversalState:TransversalState): List[CoveredPropositionEdge] = {
 
     val originalSentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId
@@ -406,4 +432,5 @@ object FeatureVectorizer extends LazyLogging {
     }    
         
   }
+  */
 }
