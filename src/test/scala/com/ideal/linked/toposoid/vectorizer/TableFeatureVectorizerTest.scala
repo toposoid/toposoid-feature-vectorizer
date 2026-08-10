@@ -76,9 +76,13 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     val response = request.send(backend)
     val responseJson = response.body match {
       case Right(successBody) => s"$successBody"
-      case Left(errorBody) => s"Upload failed. Status code: ${response.code}. Error body: $errorBody"
+      case Left(errorBody) => {
+        s"Upload failed. Status code: ${response.code}. Error body: $errorBody"
+        assert(false)
+      }
     }
-    val uploadResult = Json.parse(responseJson).as[UploadResult] 
+
+    val uploadResult = Json.parse(responseJson.toString()).as[UploadResult] 
 
     /*
     val uploadResultJson = ToposoidUtils.callComponent(
@@ -96,12 +100,12 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     val tableReference: TableReference = TableReference(reference = reference, skipHeaderRows=5, multiHeaderRowsForExcel=4, sheetNameForExcel="se0101")
     val tableId = java.util.UUID.randomUUID().toString
     val knowledgeForTable: KnowledgeForTable = KnowledgeForTable(id = tableId, tableReference = tableReference)
-    val registContentResultJson = ToposoidUtils.callComponent(
+    val registeredContentResultJson = ToposoidUtils.callComponent(
       Json.toJson(knowledgeForTable).toString(),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_HOST"),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_PORT"),
       "registerTable", transversalState)
-    val registContentResult: RegistContentResult = Json.parse(registContentResultJson).as[RegistContentResult]
+    val registeredContentResult: RegisteredTableContentResult = Json.parse(registeredContentResultJson).as[RegisteredTableContentResult]
 
     val propositionId = java.util.UUID.randomUUID().toString
     val sentenceId = java.util.UUID.randomUUID().toString
