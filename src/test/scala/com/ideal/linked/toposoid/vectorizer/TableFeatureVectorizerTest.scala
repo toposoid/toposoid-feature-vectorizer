@@ -109,7 +109,7 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     val propositionId = java.util.UUID.randomUUID().toString
     val sentenceId = java.util.UUID.randomUUID().toString
-    val knowledge:Knowledge = Knowledge(sentence = "データが存在します。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForTables = List(knowledgeForTable) )
+    val knowledge:Knowledge = Knowledge(sentence = "データが存在します。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForTables = List(registeredContentResult.knowledgeForTable) )
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],
       List.empty[PropositionRelation],
