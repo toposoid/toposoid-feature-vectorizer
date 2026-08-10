@@ -200,7 +200,7 @@ object FeatureVectorizer extends LazyLogging {
     }
     for (featureVectorForUpdate <- featureVectorForUpdates) {
       val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
-      val statusInfo = registVector(featureVectorJson, FeatureType.IMAGE.index, transversalState)
+      val statusInfo = registVector(featureVectorJson, FeatureType.TABLE.index, transversalState)
       if (statusInfo.status == "ERROR") {
         logger.error(statusInfo.message)
         throw new Exception(statusInfo.message)
@@ -311,8 +311,13 @@ object FeatureVectorizer extends LazyLogging {
       val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, FeatureType.IMAGE.index, knowledgeForParser.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
       val json = Json.toJson(featureVectorIdentifier).toString()
       deleteVector(json, FeatureType.IMAGE.index, transversalState)
+    })    
+    knowledgeForParser.knowledge.knowledgeForTables.foreach(x => {
+      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, FeatureType.IMAGE.index, knowledgeForParser.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
+      val json = Json.toJson(featureVectorIdentifier).toString()
+      deleteVector(json, FeatureType.TABLE.index, transversalState)
     })
-    //TODO:delete table vector
+
   } match {
     case Success(s) => s
     case Failure(e) => throw e
