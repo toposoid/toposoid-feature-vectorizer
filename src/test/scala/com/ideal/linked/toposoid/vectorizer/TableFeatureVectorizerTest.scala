@@ -19,7 +19,7 @@ package com.ideal.linked.toposoid.vectorizer
 
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.ideal.linked.toposoid.common.{SentenceType, ToposoidUtils, TransversalState}
+import com.ideal.linked.toposoid.common.{SentenceType, FeatureType, ToposoidUtils, TransversalState}
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, RegistContentResult, SingleFeatureVectorForSearch}
 import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
@@ -32,7 +32,24 @@ import org.apache.pekko.http.ccompat.since213
 import com.ideal.linked.toposoid.knowledgebase.regist.model.KnowledgeForTable
 import com.ideal.linked.toposoid.knowledgebase.table.model.SingleTable
 //import io.jvm.uuid.UUID
+import play.api.libs.json.{Json, OWrites, Reads}
+import sttp.client4._
+import sttp.model._
+import scala.concurrent.duration.{Duration, DurationInt}
+import com.ideal.linked.toposoid.common.TRANSVERSAL_STATE
 
+
+case class UploadContentContext(featureType: Int, url: String)
+object UploadContentContext {
+  implicit val jsonWrites: OWrites[UploadContentContext] = Json.writes[UploadContentContext]
+  implicit val jsonReads: Reads[UploadContentContext] = Json.reads[UploadContentContext]
+}    
+
+case class UploadResult(id: String, url:String, status:Int)
+object UploadResult {
+  implicit val jsonWrites: OWrites[UploadResult] = Json.writes[UploadResult]
+  implicit val jsonReads: Reads[UploadResult] = Json.reads[UploadResult]
+}
 
 class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with BeforeAndAfterAll{
 
@@ -43,12 +60,39 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
   }
 
   "The list of japanese sentences" should "be properly registered in the weaviate and searchable and deleted." in {
-    //Regist Image And Get Image's URL
-    val reference: Reference = Reference(url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0",
+    //Upload Data
+    val originalUrl = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0"    
+    val endpoint = "http://" + conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_HOST") + ":" + conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_PORT") + "/upload"    
+    val backend = DefaultSyncBackend(
+      options = BackendOptions.connectionTimeout(1.minute))
+    val request = basicRequest
+    .header(TRANSVERSAL_STATE.str, Json.toJson(transversalState).toString())      
+    .httpVersion(HttpVersion.HTTP_1_1)
+    .post(uri"${endpoint}") // Replace with your upload endpoint
+    .multipartBody(
+        multipart("featureType", FeatureType.TABLE.index.toString),
+        multipart("url", originalUrl), // デフォルト値を明示的に送る場合              
+    )
+    val response = request.send(backend)
+    val responseJson = response.body match {
+      case Right(successBody) => s"$successBody"
+      case Left(errorBody) => s"Upload failed. Status code: ${response.code}. Error body: $errorBody"
+    }
+    val uploadResult = Json.parse(responseJson).as[UploadResult] 
+
+    /*
+    val uploadResultJson = ToposoidUtils.callComponent(
+      Json.toJson(UploadContentContext(featureType = FeatureType.TABLE.index, url=originalUrl)).toString(),
+      conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_HOST"),
+      conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_PORT"),
+      "upload", transversalState)
+    */
+    //Register Data And Get Data's URL
+    val reference: Reference = Reference(url = uploadResult.url,
       surface = "データが",
       surfaceIndex = 0,
       isWholeSentence = false,
-      originalUrlOrReference= "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0")
+      originalUrlOrReference= originalUrl)
     val tableReference: TableReference = TableReference(reference = reference, skipHeaderRows=5, multiHeaderRowsForExcel=4, sheetNameForExcel="se0101")
     val tableId = java.util.UUID.randomUUID().toString
     val knowledgeForTable: KnowledgeForTable = KnowledgeForTable(id = tableId, tableReference = tableReference)
