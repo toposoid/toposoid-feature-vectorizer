@@ -21,8 +21,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
 import com.ideal.linked.toposoid.common.{SentenceType, ToposoidUtils, TransversalState}
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, RegistContentResult, SingleFeatureVectorForSearch}
-import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, SingleFeatureVectorForSearch}
+import com.ideal.linked.toposoid.knowledgebase.image.model.{SingleImage, RegisteredImageContentResult}
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.FeatureVector
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{ImageReference, Knowledge, KnowledgeForImage, PropositionRelation, Reference}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
@@ -48,16 +48,16 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     val imageReference: ImageReference = ImageReference(reference = reference, 27, 41, 287, 435)
     val imageId = java.util.UUID.randomUUID().toString
     val knowledgeForImage: KnowledgeForImage = KnowledgeForImage(id = imageId, imageReference = imageReference)
-    val registContentResultJson = ToposoidUtils.callComponent(
+    val registeredContentResultJson = ToposoidUtils.callComponent(
       Json.toJson(knowledgeForImage).toString(),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_HOST"),
       conf.getString("TOPOSOID_CONTENTS_ADMIN_PORT"),
       "registerImage", transversalState)
-    val registContentResult: RegistContentResult = Json.parse(registContentResultJson).as[RegistContentResult]
+    val registeredContentResult: RegisteredImageContentResult = Json.parse(registeredContentResultJson).as[RegisteredImageContentResult]
 
     val propositionId = java.util.UUID.randomUUID().toString
     val sentenceId = java.util.UUID.randomUUID().toString
-    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForImages = List(registContentResult.knowledgeForImage))
+    val knowledge:Knowledge = Knowledge(sentence = "猫が２匹います。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForImages = List(registeredContentResult.knowledgeForImage))
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],
       List.empty[PropositionRelation],
@@ -68,7 +68,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser, transversalState)
 
     //Get Collect Image Vector
-    val singleImage: SingleImage = SingleImage(registContentResult.knowledgeForImage.imageReference.reference.url)
+    val singleImage: SingleImage = SingleImage(registeredContentResult.knowledgeForImage.imageReference.reference.url)
     val featureVectorJson: String = ToposoidUtils.callComponent(
       Json.toJson(singleImage).toString(),
       conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"),

@@ -21,8 +21,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.flatspec.AnyFlatSpec
 import com.ideal.linked.toposoid.common.{SentenceType, FeatureType, ToposoidUtils, TransversalState}
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, RegistContentResult, SingleFeatureVectorForSearch}
-import com.ideal.linked.toposoid.knowledgebase.image.model.SingleImage
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.{FeatureVectorSearchResult, SingleFeatureVectorForSearch}
+import com.ideal.linked.toposoid.knowledgebase.table.model.{SingleTable, RegisteredTableContentResult}
 import com.ideal.linked.toposoid.knowledgebase.nlp.model.FeatureVector
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{ImageReference, Knowledge, KnowledgeForImage, PropositionRelation, Reference}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
@@ -109,7 +109,7 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     val propositionId = java.util.UUID.randomUUID().toString
     val sentenceId = java.util.UUID.randomUUID().toString
-    val knowledge:Knowledge = Knowledge(sentence = "データが存在します。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForImages = List(registContentResult.knowledgeForImage))
+    val knowledge:Knowledge = Knowledge(sentence = "データが存在します。", lang = "ja_JP", extentInfoJson = "{}", isNegativeSentence = false, knowledgeForTables = List(knowledgeForTable) )
     val knowledgeForParser:KnowledgeForParser = KnowledgeForParser(propositionId, sentenceId, knowledge)
     val knowledgeSentenceSetForParser:KnowledgeSentenceSetForParser = KnowledgeSentenceSetForParser( List.empty[KnowledgeForParser],
       List.empty[PropositionRelation],
@@ -120,7 +120,7 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser, transversalState)
 
     //Get Collect Image Vector
-    val singleTable: SingleTable = SingleTable(registContentResult.knowledgeForImage.imageReference.reference.url)
+    val singleTable: SingleTable = SingleTable(registeredContentResult.knowledgeForTable.tableReference.reference.url)
     val featureVectorJson: String = ToposoidUtils.callComponent(
       Json.toJson(singleTable).toString(),
       conf.getString("TOPOSOID_COMMON_TABLE_RECOGNITION_HOST"),
