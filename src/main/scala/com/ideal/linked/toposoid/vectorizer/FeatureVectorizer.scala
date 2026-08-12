@@ -38,6 +38,7 @@ import com.ideal.linked.toposoid.protocol.model.base.CoveredPropositionNode
 import com.ideal.linked.toposoid.common.DeductionUtilsForSemiGlobal
 import com.ideal.linked.toposoid.protocol.model.base.MatchedKnowledgeNode
 import com.ideal.linked.toposoid.protocol.model.base.MatchedFeatureInfo
+import com.ideal.linked.toposoid.knowledgebase.table.model.SingleTable
 
 /**
  * The main implementation of this module is text-to-vector representation conversion.
@@ -57,51 +58,25 @@ object FeatureVectorizer extends LazyLogging {
     val featureVectorsClaim:List[FeatureVector] = knowledgeSentenceSetForParser.claimList.map(x => getSentenceVector(x.knowledge, transversalState))
     createSentenceVectorSub(featureVectorsPremise, knowledgeSentenceSetForParser.premiseList, SentenceType.PREMISE.index, transversalState)
     createSentenceVectorSub(featureVectorsClaim, knowledgeSentenceSetForParser.claimList, SentenceType.CLAIM.index, transversalState)
-    //Regist Feature Of Images
+    //Register Feature Of Images
     if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.premiseList, SentenceType.PREMISE.index, transversalState)
     }
     if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForImages.size > 0).size > 0) {
       createImageVectorSub(knowledgeSentenceSetForParser.claimList, SentenceType.CLAIM.index, transversalState)
     }
-
+    //Register Feature Of Table
+    if(knowledgeSentenceSetForParser.premiseList.filter(_.knowledge.knowledgeForTables.size > 0).size > 0) {
+      createTableVectorSub(knowledgeSentenceSetForParser.premiseList, SentenceType.PREMISE.index, transversalState)
+    }
+    if(knowledgeSentenceSetForParser.claimList.filter(_.knowledge.knowledgeForTables.size > 0).size > 0) {
+      createTableVectorSub(knowledgeSentenceSetForParser.claimList, SentenceType.CLAIM.index, transversalState)
+    }
     nonSentenceVectorFacade(knowledgeSentenceSetForParser, NonSentenceType.REFERENCES, transversalState:TransversalState)
     nonSentenceVectorFacade(knowledgeSentenceSetForParser, NonSentenceType.TABLE_OF_CONTENTS, transversalState:TransversalState)
     nonSentenceVectorFacade(knowledgeSentenceSetForParser, NonSentenceType.HEADLINES, transversalState:TransversalState)
     nonSentenceVectorFacade(knowledgeSentenceSetForParser, NonSentenceType.TITLE_OF_TOP_PAGE, transversalState:TransversalState)
 
-    /*
-    //Regist Feature Of Reference (Since the information is linked to the Document, only the Claim is required.)
-    val references:List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]){
-      (acc, x) => {
-        x.knowledge.documentPageReference.references.size match  {
-          case 0 => acc
-          case _ => acc ++ x.knowledge.documentPageReference.references
-        }
-      }
-    }
-    val documentId = knowledgeSentenceSetForParser.claimList.head.knowledge.knowledgeForDocument.id
-    val lang = knowledgeSentenceSetForParser.claimList.head.knowledge.lang
-    if (!documentId.equals("") && references.size > 0) {
-      references.distinct.foreach( x =>
-        createNonSentenceVectorSub(documentId ,x , lang, REFERENCES.index, transversalState)
-      )
-    }
-    //Regist Feature Of TOC (Since the information is linked to the Document, only the Claim is required.)
-    val tocs:List[String] = knowledgeSentenceSetForParser.claimList.foldLeft(List.empty[String]) {
-      (acc, x) => {
-        x.knowledge.documentPageReference.tableOfContents.size match {
-          case 0 => acc
-          case _ => acc ++ x.knowledge.documentPageReference.tableOfContents
-        }
-      }
-    }
-    if (!documentId.equals("") && tocs.size > 0) {
-      tocs.distinct.foreach( x =>
-        createNonSentenceVectorSub(documentId ,x , lang, TABLE_OF_CONTENTS.index, transversalState)
-      )
-    }
-    */
     logger.debug(ToposoidUtils.formatMessageForLogger("Creating Vector completed.", transversalState.username))
   }match {
     case Success(s) => s
@@ -206,6 +181,38 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
+
+  private def createTableVectorSub(knowledgeForParsers: List[KnowledgeForParser], sentenceType: Int, transversalState:TransversalState): Unit = Try {
+    val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
+      (acc, x) => {
+        val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForTables.map(y => {
+          val vector = getTableVector(SingleTable(
+            url = y.tableReference.reference.url,
+            skipHeaderRows = y.tableReference.skipHeaderRows,
+            skipRowList = y.tableReference.skipRowList,
+            multiHeaderRowsForExcel = y.tableReference.multiHeaderRowsForExcel,
+            sheetNameForExcel = y.tableReference.sheetNameForExcel), transversalState)
+          val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
+          FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
+        })
+        acc ++ partialFeatureVectorForUpdate
+      }
+    }
+    for (featureVectorForUpdate <- featureVectorForUpdates) {
+      val featureVectorJson = Json.toJson(featureVectorForUpdate).toString()
+      val statusInfo = registVector(featureVectorJson, FeatureType.TABLE.index, transversalState)
+      if (statusInfo.status == "ERROR") {
+        logger.error(statusInfo.message)
+        throw new Exception(statusInfo.message)
+      }
+    }
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+
+
   /**
    *
    * @param knowledge
@@ -263,6 +270,15 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
+  def getTableVector(singleTable: SingleTable, transversalState:TransversalState): FeatureVector = Try{
+    val json:String = Json.toJson(singleTable).toString()
+    val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_TABLE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_TABLE_RECOGNITION_PORT"), "getFeatureVector", transversalState)
+    logger.debug(ToposoidUtils.formatMessageForLogger("Getting TableVector completed.", transversalState.username))
+    Json.parse(featureVectorJson).as[FeatureVector]
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
 
   /**
    *
@@ -276,6 +292,7 @@ object FeatureVectorizer extends LazyLogging {
       case FeatureType.SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
       case FeatureType.IMAGE.index =>  ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
       case FeatureType.NON_SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
+      case FeatureType.TABLE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "insert", transversalState)
       case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
     }
     Json.parse(statusInfoJson).as[StatusInfo]
@@ -294,8 +311,13 @@ object FeatureVectorizer extends LazyLogging {
       val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, FeatureType.IMAGE.index, knowledgeForParser.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
       val json = Json.toJson(featureVectorIdentifier).toString()
       deleteVector(json, FeatureType.IMAGE.index, transversalState)
+    })    
+    knowledgeForParser.knowledge.knowledgeForTables.foreach(x => {
+      val featureVectorIdentifier:FeatureVectorIdentifier = FeatureVectorIdentifier(knowledgeForParser.propositionId, x.id, FeatureType.IMAGE.index, knowledgeForParser.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
+      val json = Json.toJson(featureVectorIdentifier).toString()
+      deleteVector(json, FeatureType.TABLE.index, transversalState)
     })
-    //TODO:delete table vector
+
   } match {
     case Success(s) => s
     case Failure(e) => throw e
@@ -313,7 +335,11 @@ object FeatureVectorizer extends LazyLogging {
         conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"),
         propositionId, transversalState
       )
-      //TODO:delete table vector
+      this.removeAllVectorBySuperiorId(
+        conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"),
+        conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"),
+        propositionId, transversalState
+      )
     })
     this.removeAllVectorBySuperiorId(
       conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"),
@@ -332,6 +358,7 @@ object FeatureVectorizer extends LazyLogging {
       case FeatureType.SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
       case FeatureType.IMAGE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "delete", transversalState)
       case FeatureType.NON_SENTENCE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "deleteBySuperiorId", transversalState)
+      case FeatureType.TABLE.index => ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "deleteBySuperiorId", transversalState)
       case _ => """{"status":"ERROR", "message":"BAD CONTENTS"}"""
     }
     Json.parse(statusInfoJson).as[StatusInfo]
@@ -353,9 +380,10 @@ object FeatureVectorizer extends LazyLogging {
         val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
         ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
       }
-      case FeatureType.TABLE => {
-        //TODO:Implement
-        Json.toJson(FeatureVectorSearchResult(List.empty[FeatureVectorIdentifier], List.empty[Float], StatusInfo("Ok", ""))).toString
+      case FeatureType.TABLE => {        
+        val vector = getTableVector(SingleTable(url=url), transversalState)
+        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_TABLE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()        
+        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
       } 
       case _ => {
         Json.toJson(FeatureVectorSearchResult(List.empty[FeatureVectorIdentifier], List.empty[Float], StatusInfo("Ok", ""))).toString
@@ -365,72 +393,5 @@ object FeatureVectorizer extends LazyLogging {
     Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
 
   }
-  /*
-  def getMatchedSentenceFeature(aso:AnalyzedSentenceObject, transversalState:TransversalState): List[CoveredPropositionEdge] = {
 
-    val originalSentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId
-    val originalSentenceType = aso.knowledgeBaseSemiGlobalNode.sentenceType
-    val sentence = aso.knowledgeBaseSemiGlobalNode.sentence
-    val lang = aso.knowledgeBaseSemiGlobalNode.localContextForFeature.lang
-
-    val vector = getSentenceVector(Knowledge(sentence, lang, "{}"), transversalState)
-    val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_SENTENCE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
-    val featureVectorSearchResultJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-    val result = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
-
-    //VecotrDBにClaimとして存在している場合に推論が可能になる
-    val (ids, similarities) = (result.ids zip result.similarities).foldLeft((List.empty[FeatureVectorIdentifier], List.empty[Float])) {
-      (acc, x) => {
-        x._1.sentenceType match {
-          case SentenceType.CLAIM.index => (acc._1 :+ x._1, acc._2 :+ x._2)
-          case _ => acc
-        }
-      }
-    }
-
-    val filteredResult = FeatureVectorSearchResult(ids, similarities, result.statusInfo) 
-    val deductionUnitName = conf.getString("TOPOSOID_DEDUCTION_UNIT_NAME")
-    filteredResult.ids.size match {
-      case 0 => List.empty[CoveredPropositionEdge]
-      case _ => {        
-        val featureVectorSearchInfoList = DeductionUtilsForSemiGlobal.extractExistInNeo4JResultForSentence(filteredResult, originalSentenceType, transversalState)        
-        val matchedKnowledgeNodes = featureVectorSearchInfoList.map(x => {
-          MatchedKnowledgeNode(
-            propositionId = x.propositionId,
-            sentenceId = x.sentenceId,
-            nodeId = "",
-            caseNameOnEdge = "",
-            isDenialWord = false,
-            nodeType = x.sentenceType,
-            featureInfo = MatchedFeatureInfo(featureId = x.featureId, similarity = x.similarity)
-          )          
-        })
-
-        aso.edgeList.map(x => {
-          val sourceNode = aso.nodeMap.get(x.sourceId).get.asInstanceOf[KnowledgeBaseNode]
-          val destinationNode = aso.nodeMap.get(x.destinationId).get.asInstanceOf[KnowledgeBaseNode]
-          val sourceCoveredPropositionNode = CoveredPropositionNode(
-            terminalId = sourceNode.nodeId,
-            terminalSurface = sourceNode.predicateArgumentStructure.surface,
-            terminalUrl = "",
-            matchedKnowledgeNodes = matchedKnowledgeNodes,
-            isConfirmed = true,
-            deductionUnit = deductionUnitName
-          )
-
-          val destinationCoveredPropositionNode = CoveredPropositionNode(
-            terminalId = destinationNode.nodeId,
-            terminalSurface = destinationNode.predicateArgumentStructure.surface,
-            terminalUrl = "",
-            matchedKnowledgeNodes = matchedKnowledgeNodes,
-            isConfirmed = true,
-            deductionUnit = deductionUnitName
-          )
-          CoveredPropositionEdge(sourceCoveredPropositionNode, destinationCoveredPropositionNode)
-        }) 
-      }
-    }    
-        
-  }
-  */
 }
