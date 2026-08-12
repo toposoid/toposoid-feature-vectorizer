@@ -60,6 +60,13 @@ services:
     ports:
       - 9013:9013
 
+  toposoid-common-table-recognition-web:
+    image: toposoid/toposoid-common-table-recognition-web:0.7-SNAPSHOT    
+    environment: 
+      - TOPOSOID_TABLE_RECOGNITION_MODEL=tabicl 
+    ports:
+      - 9019:9019
+
   data-accessor-sentence-weaviate-web:
     image: toposoid/data-accessor-weaviate-web:0.7-SNAPSHOT
     environment:
