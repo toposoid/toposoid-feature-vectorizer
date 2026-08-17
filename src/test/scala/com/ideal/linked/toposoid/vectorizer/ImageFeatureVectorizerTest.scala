@@ -27,6 +27,12 @@ import com.ideal.linked.toposoid.knowledgebase.nlp.model.FeatureVector
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{ImageReference, Knowledge, KnowledgeForImage, PropositionRelation, Reference}
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import play.api.libs.json.Json
+import com.ideal.linked.toposoid.vectorizer.FeatureVectorizer.getFeatureVectorSearchResult
+import com.ideal.linked.toposoid.common.FeatureType
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.FeatureVectorIdentifier
+import com.ideal.linked.toposoid.common.SuperiorType
+import com.ideal.linked.toposoid.common.NonSentenceType
+import com.ideal.linked.toposoid.common.CaseGroupType
 //import io.jvm.uuid.UUID
 
 
@@ -69,18 +75,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     //Get Collect Image Vector
     val singleImage: SingleImage = SingleImage(registeredContentResult.knowledgeForImage.imageReference.reference.url)
-    val featureVectorJson: String = ToposoidUtils.callComponent(
-      Json.toJson(singleImage).toString(),
-      conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"),
-      conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"),
-      "getFeatureVector", transversalState)
-    val featureVector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
-
-    //Search Vector
-    val searchOb = SingleFeatureVectorForSearch(vector = featureVector.vector, num = 10)
-    val searchJson = Json.toJson(searchOb).toString()
-    val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-    val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
+    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.IMAGE,  "", "ja_JP", singleImage, transversalState)
 
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
@@ -95,11 +90,12 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       FeatureVectorizer.removeVectorByPropositionId(x, transversalState)
     })
     Thread.sleep(7000)
-    val featureVectorSearchResultJson2 = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-    val featureVectorSearchResult2: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson2).as[FeatureVectorSearchResult]
-    //Check
-    assert(featureVectorSearchResult2.ids.size == 0)
 
+    val featureVectorIdentifierIMGV = FeatureVectorIdentifier(propositionId, "-", -1, "ja_JP", SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
+    val jsonIMGV: String = Json.toJson(featureVectorIdentifierIMGV).toString()
+    val featureVectorSearchResultJsonIMGV: String = ToposoidUtils.callComponent(jsonIMGV, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "searchBySuperiorId", transversalState)
+    val checkIMGV = Json.parse(featureVectorSearchResultJsonIMGV).as[FeatureVectorSearchResult]
+    assert(checkIMGV.ids.size == 0)
   }
 
 

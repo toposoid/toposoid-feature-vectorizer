@@ -145,7 +145,7 @@ object FeatureVectorizer extends LazyLogging {
     val featureVectorForUpdates: List[FeatureVectorForUpdate] = knowledgeForParsers.foldLeft(List.empty[FeatureVectorForUpdate]) {
       (acc, x) => {
         val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForImages.map(y => {
-          val vector = getImageVector(y.imageReference.reference.url, transversalState)
+          val vector = getImageVector(SingleImage(url=y.imageReference.reference.url), transversalState)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
         })
@@ -238,8 +238,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def getImageVector(imageUrl: String, transversalState:TransversalState): FeatureVector = Try{
-    val singleImage = SingleImage(url=imageUrl)
+  def getImageVector(singleImage:SingleImage, transversalState:TransversalState): FeatureVector = Try{    
     val json:String = Json.toJson(singleImage).toString()
     val featureVectorJson: String = ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_HOST"), conf.getString("TOPOSOID_COMMON_IMAGE_RECOGNITION_PORT"), "getFeatureVector", transversalState)
     logger.debug(ToposoidUtils.formatMessageForLogger("Getting ImageVector completed.", transversalState.username))
@@ -367,7 +366,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def getFeatureVectorSearchResult(featureType:FeatureType,  sentence:String, lang:String, url:String, transversalState:TransversalState): FeatureVectorSearchResult = {
+  def getFeatureVectorSearchResult(featureType:FeatureType,  sentence:String, lang:String, featureInfo:SingleImage|SingleTable, transversalState:TransversalState): FeatureVectorSearchResult = Try {
 
     val featureVectorSearchResultJson = featureType match {
       case FeatureType.SENTENCE => {
@@ -376,14 +375,24 @@ object FeatureVectorizer extends LazyLogging {
         ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
       }
       case FeatureType.IMAGE => {
-        val vector = getImageVector(url, transversalState)
-        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
-        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+        featureInfo match {
+          case singleImage:SingleImage =>  {
+            val vector = getImageVector(singleImage, transversalState)
+            val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
+             ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+          }
+          case _ => throw Exception("The input information for the image vector is invalid.")
+        }
       }
-      case FeatureType.TABLE => {        
-        val vector = getTableVector(SingleTable(url=url), transversalState)
-        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_TABLE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()        
-        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      case FeatureType.TABLE => {   
+        featureInfo match {
+          case singleTable:SingleTable =>  {
+            val vector = getTableVector(singleTable, transversalState)
+            val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_TABLE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()        
+            ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+          }
+          case _ => throw Exception("The input information for the table vector is invalid.")
+        }
       } 
       case _ => {
         Json.toJson(FeatureVectorSearchResult(List.empty[FeatureVectorIdentifier], List.empty[Float], StatusInfo("Ok", ""))).toString
@@ -392,6 +401,9 @@ object FeatureVectorizer extends LazyLogging {
 
     Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
 
+  } match {
+    case Success(s) => s
+    case Failure(e) => throw e
   }
 
 }

@@ -37,6 +37,11 @@ import sttp.client4._
 import sttp.model._
 import scala.concurrent.duration.{Duration, DurationInt}
 import com.ideal.linked.toposoid.common.TRANSVERSAL_STATE
+import com.ideal.linked.toposoid.vectorizer.FeatureVectorizer.getFeatureVectorSearchResult
+import com.ideal.linked.toposoid.knowledgebase.featurevector.model.FeatureVectorIdentifier
+import com.ideal.linked.toposoid.common.SuperiorType
+import com.ideal.linked.toposoid.common.NonSentenceType
+import com.ideal.linked.toposoid.common.CaseGroupType
 
 
 case class UploadContentContext(featureType: Int, url: String)
@@ -84,13 +89,6 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     val uploadResult = Json.parse(responseJson.toString()).as[UploadResult] 
 
-    /*
-    val uploadResultJson = ToposoidUtils.callComponent(
-      Json.toJson(UploadContentContext(featureType = FeatureType.TABLE.index, url=originalUrl)).toString(),
-      conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_HOST"),
-      conf.getString("TOPOSOID_FILE_UPLOAD_FACADE_PORT"),
-      "upload", transversalState)
-    */
     //Register Data And Get Data's URL
     val reference: Reference = Reference(url = uploadResult.url,
       surface = "データが",
@@ -119,21 +117,9 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     //Create Vector
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser, transversalState)
 
-    //Get Collect Image Vector
-    val singleTable: SingleTable = SingleTable(registeredContentResult.knowledgeForTable.tableReference.reference.url)
-    val featureVectorJson: String = ToposoidUtils.callComponent(
-      Json.toJson(singleTable).toString(),
-      conf.getString("TOPOSOID_COMMON_TABLE_RECOGNITION_HOST"),
-      conf.getString("TOPOSOID_COMMON_TABLE_RECOGNITION_PORT"),
-      "getFeatureVector", transversalState)
-    val featureVector: FeatureVector = Json.parse(featureVectorJson).as[FeatureVector]
-
-    //Search Vector
-    val searchOb = SingleFeatureVectorForSearch(vector = featureVector.vector, num = 10)
-    val searchJson = Json.toJson(searchOb).toString()
-    val featureVectorSearchResultJson = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-    val featureVectorSearchResult: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson).as[FeatureVectorSearchResult]
-
+    //Get Collect Table Vector
+    val singleTable: SingleTable = SingleTable(url = registeredContentResult.knowledgeForTable.tableReference.reference.url, skipHeaderRows=5, multiHeaderRowsForExcel=4, sheetNameForExcel="se0101")
+    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.TABLE,  "", "ja_JP", singleTable, transversalState)
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
     assert(featureVectorSearchResult.ids.size == 1)
@@ -147,10 +133,12 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
       FeatureVectorizer.removeVectorByPropositionId(x, transversalState)
     })
     Thread.sleep(7000)
-    val featureVectorSearchResultJson2 = ToposoidUtils.callComponent(searchJson, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
-    val featureVectorSearchResult2: FeatureVectorSearchResult = Json.parse(featureVectorSearchResultJson2).as[FeatureVectorSearchResult]
-    //Check
-    assert(featureVectorSearchResult2.ids.size == 0)
+
+    val featureVectorIdentifierTABLV = FeatureVectorIdentifier(propositionId, "-", -1, "ja_JP", SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
+    val jsonTABLV: String = Json.toJson(featureVectorIdentifierTABLV).toString()
+    val featureVectorSearchResultJsonTABLV: String = ToposoidUtils.callComponent(jsonTABLV, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "searchBySuperiorId", transversalState)
+    val resultTABLV = Json.parse(featureVectorSearchResultJsonTABLV).as[FeatureVectorSearchResult]
+    assert(resultTABLV.ids.size == 0)
 
   }
 
