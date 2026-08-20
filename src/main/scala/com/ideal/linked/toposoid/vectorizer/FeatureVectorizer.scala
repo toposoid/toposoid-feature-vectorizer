@@ -190,7 +190,7 @@ object FeatureVectorizer extends LazyLogging {
             url = y.tableReference.reference.url,
             skipHeaderRows = y.tableReference.skipHeaderRows,
             skipRowList = y.tableReference.skipRowList,
-            multiHeaderRowsForExcel = y.tableReference.multiHeaderRowsForExcel,
+            multiHeaderRows = y.tableReference.multiHeaderRows,
             sheetNameForExcel = y.tableReference.sheetNameForExcel), transversalState)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
