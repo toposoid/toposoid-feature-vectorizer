@@ -187,11 +187,7 @@ object FeatureVectorizer extends LazyLogging {
       (acc, x) => {
         val partialFeatureVectorForUpdate: List[FeatureVectorForUpdate] = x.knowledge.knowledgeForTables.map(y => {
           val vector = getTableVector(SingleTable(
-            url = y.tableReference.reference.url,
-            skipHeaderRows = y.tableReference.skipHeaderRows,
-            skipRowList = y.tableReference.skipRowList,
-            multiHeaderRows = y.tableReference.multiHeaderRows,
-            sheetNameForExcel = y.tableReference.sheetNameForExcel), transversalState)
+            url = y.tableReference.reference.url), transversalState)
           val featureVectorIdentifier: FeatureVectorIdentifier = FeatureVectorIdentifier(x.propositionId, y.id, sentenceType, x.knowledge.lang, SuperiorType.PROPOSITION_ID.index, NonSentenceType.UNSPECIFIED.index, CaseGroupType.UNSPECIFIED.index)
           FeatureVectorForUpdate(featureVectorIdentifier, vector.vector)
         })
