@@ -118,7 +118,7 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
     FeatureVectorizer.createVector(knowledgeSentenceSetForParser, transversalState)
 
     //Get Collect Table Vector
-    val singleTable: SingleTable = SingleTable(url = registeredContentResult.knowledgeForTable.tableReference.reference.url, skipHeaderRows=5, multiHeaderRows=4, sheetNameForExcel="se0101")
+    val singleTable: SingleTable = SingleTable(url = registeredContentResult.knowledgeForTable.tableReference.reference.url)
     val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.TABLE,  "", "ja_JP", singleTable, transversalState)
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
