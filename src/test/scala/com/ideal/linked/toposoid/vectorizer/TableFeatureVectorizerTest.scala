@@ -119,7 +119,7 @@ class TableFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     //Get Collect Table Vector
     val singleTable: SingleTable = SingleTable(url = registeredContentResult.knowledgeForTable.tableReference.reference.url)
-    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.TABLE,  "", "ja_JP", singleTable, transversalState)
+    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.TABLE,  "", "ja_JP", Option(singleTable), transversalState)
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
     assert(featureVectorSearchResult.ids.size == 1)
