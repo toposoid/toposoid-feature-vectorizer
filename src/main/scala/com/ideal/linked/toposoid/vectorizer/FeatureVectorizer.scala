@@ -362,7 +362,7 @@ object FeatureVectorizer extends LazyLogging {
     case Failure(e) => throw e
   }
 
-  def getFeatureVectorSearchResult(featureType:FeatureType,  sentence:String, lang:String, featureInfo:SingleImage|SingleTable, transversalState:TransversalState): FeatureVectorSearchResult = Try {
+  def getFeatureVectorSearchResult(featureType:FeatureType,  sentence:String, lang:String, featureInfo:Option[SingleImage|SingleTable], transversalState:TransversalState): FeatureVectorSearchResult = Try {
 
     val featureVectorSearchResultJson = featureType match {
       case FeatureType.SENTENCE => {
@@ -370,22 +370,37 @@ object FeatureVectorizer extends LazyLogging {
         val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_SENTENCE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
         ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
       }
+      case FeatureType.NON_SENTENCE => {
+        val vector = getNonSentenceVector(sentence, lang, transversalState)
+        val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_NUM_MAX").toInt)).toString()
+        ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_NON_SENTENCE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+      }
       case FeatureType.IMAGE => {
         featureInfo match {
-          case singleImage:SingleImage =>  {
-            val vector = getImageVector(singleImage, transversalState)
-            val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
-             ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+          case Some(singleImage) =>  {
+            singleImage match {
+              case singleImage:SingleImage => {
+                val vector = getImageVector(singleImage, transversalState)
+                val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_IMAGE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()
+                ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_IMAGE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+              }
+              case _ => throw Exception("The input information for the image vector is invalid.")              
+            }
           }
           case _ => throw Exception("The input information for the image vector is invalid.")
         }
       }
       case FeatureType.TABLE => {   
         featureInfo match {
-          case singleTable:SingleTable =>  {
-            val vector = getTableVector(singleTable, transversalState)
-            val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_TABLE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()        
-            ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+          case Some(singleTable) =>  {
+            singleTable match {
+              case singleTable:SingleTable => {
+                val vector = getTableVector(singleTable, transversalState)
+                val json: String = Json.toJson(SingleFeatureVectorForSearch(vector = vector.vector, num = conf.getString("TOPOSOID_TABLE_VECTORDB_SEARCH_NUM_MAX").toInt)).toString()        
+                ToposoidUtils.callComponent(json, conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_HOST"), conf.getString("TOPOSOID_TABLE_VECTORDB_ACCESSOR_PORT"), "search", transversalState)
+              }
+              case _ => throw Exception("The input information for the table vector is invalid.")
+            }
           }
           case _ => throw Exception("The input information for the table vector is invalid.")
         }

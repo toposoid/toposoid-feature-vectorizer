@@ -75,7 +75,7 @@ class ImageFeatureVectorizerTest extends AnyFlatSpec with BeforeAndAfter with Be
 
     //Get Collect Image Vector
     val singleImage: SingleImage = SingleImage(registeredContentResult.knowledgeForImage.imageReference.reference.url)
-    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.IMAGE,  "", "ja_JP", singleImage, transversalState)
+    val featureVectorSearchResult = getFeatureVectorSearchResult(FeatureType.IMAGE,  "", "ja_JP", Option(singleImage), transversalState)
 
     //Check
     assert(featureVectorSearchResult.statusInfo.status.equals("OK"))
